@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'sigup_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +67,7 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return ConstrainedBox(
@@ -85,7 +86,7 @@ class _LoginState extends State<Login> {
                     padding: const EdgeInsets.all(16.0),
                     child: Container(
                       decoration: const BoxDecoration(
-                        color: Colors.white24,
+                        color: Color(0xFF9370DB),
                         borderRadius: BorderRadius.all(Radius.circular(60)),
                         boxShadow: [
                           BoxShadow(
@@ -103,8 +104,7 @@ class _LoginState extends State<Login> {
                             children: [
                               TextFormField(
                                 controller: emailController,
-                                validator: (val) =>
-                                val == "" ? "Informe um email válido" : null,
+                                validator: (val) => val == "" ? "Informe um email válido" : null,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.email, color: Colors.black),
                                   hintText: "email...",
@@ -120,8 +120,7 @@ class _LoginState extends State<Login> {
                               Obx(() => TextFormField(
                                 controller: passwordController,
                                 obscureText: isObsecure.value,
-                                validator: (val) =>
-                                val == "" ? "Informe uma senha válida" : null,
+                                validator: (val) => val == "" ? "Informe uma senha válida" : null,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.vpn_key_sharp, color: Colors.black),
                                   suffixIcon: GestureDetector(
@@ -129,9 +128,7 @@ class _LoginState extends State<Login> {
                                       isObsecure.value = !isObsecure.value;
                                     },
                                     child: Icon(
-                                      isObsecure.value
-                                          ? Icons.visibility_off
-                                          : Icons.visibility,
+                                      isObsecure.value ? Icons.visibility_off : Icons.visibility,
                                       color: Colors.black,
                                     ),
                                   ),
@@ -153,13 +150,25 @@ class _LoginState extends State<Login> {
                                   labelStyle: TextStyle(color: Color(0xFFA88A6F)),
                                 ),
                                 items: [
-                                  DropdownMenuItem(
+                                  DropdownMenuItem<String>(
                                     value: 'Cliente',
-                                    child: Text('Cliente', style: TextStyle(color: Colors.black)),
+                                    child: Row(
+                                      children: const [
+                                        Icon(Icons.person, color: Colors.black), // Ícone para Cliente
+                                        SizedBox(width: 8),
+                                        Text('Cliente', style: TextStyle(color: Colors.black)),
+                                      ],
+                                    ),
                                   ),
-                                  DropdownMenuItem(
+                                  DropdownMenuItem<String>(
                                     value: 'Jogador',
-                                    child: Text('Jogador', style: TextStyle(color: Colors.black)),
+                                    child: Row(
+                                      children: const [
+                                        Icon(Icons.gamepad, color: Colors.black), // Ícone para Jogador
+                                        SizedBox(width: 8),
+                                        Text('Jogador', style: TextStyle(color: Colors.black)),
+                                      ],
+                                    ),
                                   ),
                                 ],
                                 onChanged: (value) {
@@ -182,12 +191,10 @@ class _LoginState extends State<Login> {
                                   onTap: _login,
                                   borderRadius: BorderRadius.circular(30),
                                   child: const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: 10, horizontal: 28),
+                                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 28),
                                     child: Text(
                                       "Login",
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 16),
+                                      style: TextStyle(color: Colors.white, fontSize: 16),
                                     ),
                                   ),
                                 ),
@@ -196,16 +203,14 @@ class _LoginState extends State<Login> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text("Don't have an account?",
-                                      style: TextStyle(color: Colors.white60)),
+                                  const Text("Don't have an account?", style: TextStyle(color: Colors.white60)),
                                   TextButton(
                                     onPressed: () {
                                       Get.to(() => const SignUpScreen());
                                     },
                                     child: const Text(
                                       "Register Here",
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 16),
+                                      style: TextStyle(color: Colors.white, fontSize: 16),
                                     ),
                                   ),
                                 ],
@@ -227,16 +232,24 @@ class _LoginState extends State<Login> {
 }
 
 // Dashboard
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   final String role;
 
   DashboardPage({required this.role});
 
   @override
+  _DashboardPageState createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  String selectedPage = 'Dashboard Geral';
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Painel do $role'),
+        title: Text('Painel do ${widget.role}'),
+        backgroundColor: Color (0xFF9370DB),
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app),
@@ -245,92 +258,141 @@ class DashboardPage extends StatelessWidget {
             },
             tooltip: 'Deslogar',
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              setState(() {
+                selectedPage = value!;
+              });
+            },
+            itemBuilder: (context) => _getMenuItems(),
+          ),
         ],
       ),
-      body: DefaultTabController(
-        length: role == 'Client' ? 3 : 4, // Atualize o comprimento para 4 se o papel for "Pro"
-        child: Column(
-          children: [
-            TabBar(
-              tabs: [
-                Tab(text: role == 'Client' ? 'Pedidos Pendentes' : 'Pedidos Pendentes'),
-                Tab(text: role == 'Client' ? 'Pedidos Concluídos' : 'Pedidos Concluídos'),
-                if (role == 'Client') Tab(text: 'Chat com o Profissional'),
-                if (role == 'Pro') Tab(text: 'Chat com o Cliente'),
-                if (role == 'Pro') Tab(text: 'Saque'),
-              ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              getPageTitle(selectedPage),
+              style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold), // Alterado para preto
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  PendingOrdersPage(),
-                  CompletedOrdersPage(),
-                  if (role == 'Client') ChatPage(),
-                  if (role == 'Pro') ChatWithClientPage(),
-                  if (role == 'Pro') WithdrawalPage(),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: getPageContent(),
+          ),
+        ],
       ),
     );
   }
-}
 
-class PendingOrdersPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Aqui você pode visualizar os pedidos pendentes.'),
+  List<PopupMenuItem<String>> _getMenuItems() {
+    return [
+      PopupMenuItem<String>(
+        value: 'Dashboard Geral',
+        child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
+      ),
+      PopupMenuItem<String>(
+        value: 'Pedidos Pendentes',
+        child: _buildMenuItem(Icons.pending, 'Pedidos Pendentes'),
+      ),
+      PopupMenuItem<String>(
+        value: 'Pedidos Concluídos',
+        child: _buildMenuItem(Icons.check_circle, 'Pedidos Concluídos'),
+      ),
+      if (widget.role == 'Pro')
+        PopupMenuItem<String>(
+          value: 'Chat com o Cliente',
+          child: _buildMenuItem(Icons.chat, 'Chat com o Cliente'),
+        ),
+      if (widget.role == 'Client')
+        PopupMenuItem<String>(
+          value: 'Chat com o Profissional',
+          child: _buildMenuItem(Icons.person, 'Chat com o Profissional'),
+        ),
+      if (widget.role == 'Pro')
+        PopupMenuItem<String>(
+          value: 'Saque',
+          child: _buildMenuItem(Icons.attach_money, 'Saque'),
+        ),
+    ];
+  }
+
+  // Método para criar um item de menu com ícone e texto
+  static Widget _buildMenuItem(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.black),
+        const SizedBox(width: 8),
+        Text(text, style: const TextStyle(color: Colors.black)),
+      ],
     );
+  }
+
+  String getPageTitle(String page) {
+    switch (page) {
+      case 'Dashboard Geral':
+        return 'Bem-vindo ao Dashboard Geral!';
+      case 'Pedidos Pendentes':
+        return 'Aqui estão os pedidos pendentes.';
+      case 'Pedidos Concluídos':
+        return 'Aqui estão os pedidos concluídos.';
+      case 'Chat com o Cliente':
+        return 'Aqui é o chat com o cliente.';
+      case 'Chat com o Profissional':
+        return 'Aqui é o chat com o profissional.';
+      case 'Saque':
+        return 'Aqui você pode realizar um saque.';
+      default:
+        return 'Selecione uma opção.';
+    }
+  }
+
+  Widget getPageContent() {
+    switch (selectedPage) {
+      case 'Dashboard Geral':
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.dashboard, size: 80, color: Colors.indigo),
+              SizedBox(height: 20),
+              Text(
+                'Esta é uma visão geral do seu painel.',
+                style: TextStyle(color: Colors.black, fontSize: 18), // Alterado para preto
+              ),
+            ],
+          ),
+        );
+      case 'Pedidos Pendentes':
+        return const Center(child: Text('Aqui estão os pedidos pendentes.', style: TextStyle(color: Colors.black))); // Alterado para preto
+      case 'Pedidos Concluídos':
+        return const Center(child: Text('Aqui estão os pedidos concluídos.', style: TextStyle(color: Colors.black))); // Alterado para preto
+      case 'Chat com o Cliente':
+        return const Center(child: Text('Aqui é o chat com o cliente.', style: TextStyle(color: Colors.black))); // Alterado para preto
+      case 'Chat com o Profissional':
+        return const Center(child: Text('Aqui é o chat com o profissional.', style: TextStyle(color: Colors.black))); // Alterado para preto
+      case 'Saque':
+        return const Center(child: Text('Aqui você pode realizar um saque.', style: TextStyle(color: Colors.black))); // Alterado para preto
+      default:
+        return const Center(child: Text('Selecione uma opção.', style: TextStyle(color: Colors.black))); // Alterado para preto
+    }
   }
 }
 
-class CompletedOrdersPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Aqui você pode visualizar os pedidos concluídos.'),
-    );
-  }
-}
-
-class ChatPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Aqui você pode conversar com o profissional.'),
-    );
-  }
-}
-
-class ChatWithClientPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Aqui você pode conversar com o cliente.'),
-    );
-  }
-}
-
-class WithdrawalPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Aqui você pode gerenciar seus saques.'),
-    );
-  }
-}
-
-class SignUpScreen extends StatelessWidget {
-  const SignUpScreen({super.key});
+// Tela de Registro (para futuras implementações)
+class SigUpScreen extends StatelessWidget {
+  const SigUpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registrar')),
-      body: const Center(child: Text('Tela de Registro')),
+      appBar: AppBar(
+        title: const Text('Registrar'),
+      ),
+      body: const Center(
+        child: Text('Formulário de Registro'),
+      ),
     );
   }
 }
