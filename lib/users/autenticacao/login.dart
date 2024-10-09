@@ -275,7 +275,7 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.all(16.0),
             child: Text(
               getPageTitle(selectedPage),
-              style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold), // Alterado para preto
+              style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
@@ -293,12 +293,12 @@ class _DashboardPageState extends State<DashboardPage> {
         child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
       ),
       PopupMenuItem<String>(
-        value: 'Pedidos Pendentes',
-        child: _buildMenuItem(Icons.pending, 'Pedidos Pendentes'),
+        value: 'Serviços Pendentes',
+        child: _buildMenuItem(Icons.pending, 'Serviços Pendentes'), // Atualizado
       ),
       PopupMenuItem<String>(
-        value: 'Pedidos Concluídos',
-        child: _buildMenuItem(Icons.check_circle, 'Pedidos Concluídos'),
+        value: 'Serviços Concluídos',
+        child: _buildMenuItem(Icons.check_circle, 'Serviços Concluídos'), // Atualizado
       ),
       if (widget.role == 'Pro')
         PopupMenuItem<String>(
@@ -318,7 +318,6 @@ class _DashboardPageState extends State<DashboardPage> {
     ];
   }
 
-  // Método para criar um item de menu com ícone e texto
   static Widget _buildMenuItem(IconData icon, String text) {
     return Row(
       children: [
@@ -333,10 +332,10 @@ class _DashboardPageState extends State<DashboardPage> {
     switch (page) {
       case 'Dashboard Geral':
         return 'Bem-vindo ao Dashboard Geral!';
-      case 'Pedidos Pendentes':
-        return 'Aqui estão os pedidos pendentes.';
-      case 'Pedidos Concluídos':
-        return 'Aqui estão os pedidos concluídos.';
+      case 'Serviços Pendentes':
+        return 'Aqui estão os serviços pendentes.'; // Atualizado
+      case 'Serviços Concluídos':
+        return 'Aqui estão os serviços concluídos.'; // Atualizado
       case 'Chat com o Cliente':
         return 'Aqui é o chat com o cliente.';
       case 'Chat com o Profissional':
@@ -359,23 +358,23 @@ class _DashboardPageState extends State<DashboardPage> {
               SizedBox(height: 20),
               Text(
                 'Esta é uma visão geral do seu painel.',
-                style: TextStyle(color: Colors.black, fontSize: 18), // Alterado para preto
+                style: TextStyle(color: Colors.black, fontSize: 18),
               ),
             ],
           ),
         );
-      case 'Pedidos Pendentes':
-        return const Center(child: Text('Aqui estão os pedidos pendentes.', style: TextStyle(color: Colors.black))); // Alterado para preto
-      case 'Pedidos Concluídos':
-        return const Center(child: Text('Aqui estão os pedidos concluídos.', style: TextStyle(color: Colors.black))); // Alterado para preto
+      case 'Serviços Pendentes':
+        return const Center(child: Text('Aqui estão os serviços pendentes.', style: TextStyle(color: Colors.black)));
+      case 'Serviços Concluídos':
+        return const Center(child: Text('Aqui estão os serviços concluídos.', style: TextStyle(color: Colors.black)));
       case 'Chat com o Cliente':
-        return const Center(child: Text('Aqui é o chat com o cliente.', style: TextStyle(color: Colors.black))); // Alterado para preto
+        return const Center(child: Text('Aqui é o chat com o cliente.', style: TextStyle(color: Colors.black)));
       case 'Chat com o Profissional':
-        return const Center(child: Text('Aqui é o chat com o profissional.', style: TextStyle(color: Colors.black))); // Alterado para preto
+        return const Center(child: Text('Aqui é o chat com o profissional.', style: TextStyle(color: Colors.black)));
       case 'Saque':
-        return const Center(child: Text('Aqui você pode realizar um saque.', style: TextStyle(color: Colors.black))); // Alterado para preto
+        return const Center(child: Text('Aqui você pode realizar um saque.', style: TextStyle(color: Colors.black)));
       default:
-        return const Center(child: Text('Selecione uma opção.', style: TextStyle(color: Colors.black))); // Alterado para preto
+        return const Center(child: Text('Selecione uma opção.', style: TextStyle(color: Colors.black)));
     }
   }
 }

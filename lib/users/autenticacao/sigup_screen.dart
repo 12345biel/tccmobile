@@ -12,17 +12,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
   final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final eloController = TextEditingController();
   final phoneController = TextEditingController();
-  final cpfController = TextEditingController();
+  final eloController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
   final isObsecure = true.obs;
+  String accountType = 'Jogador'; // Tipo de conta selecionado
+
+  void _setAccountType(String type) {
+    setState(() {
+      accountType = type;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center( // Centraliza todo o conteúdo verticalmente e horizontalmente
+      body: Center(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -31,12 +38,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Color(0xFF9370DB),
-                    borderRadius: BorderRadius.all(Radius.circular(30)), // Ajustado para 30 para deixar mais suave
+                    borderRadius: BorderRadius.all(Radius.circular(30)),
                     boxShadow: [
                       BoxShadow(
                         blurRadius: 8,
                         color: Colors.black26,
-                        offset: Offset(0, 3), // Mudança de offset para dar mais profundidade
+                        offset: Offset(0, 3),
                       ),
                     ],
                   ),
@@ -45,27 +52,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: Form(
                       key: formKey,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch, // Para ocupar todo o espaço disponível
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Título
-                          Text(
-                            "Crie sua Conta",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center, // Centraliza o texto do título
+                          // Linha com ícones
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.gamepad, color: accountType == 'Jogador' ? Colors.white : Colors.grey), // Ícone de controle de videogame
+                                onPressed: () => _setAccountType('Jogador'),
+                              ),
+                              Text(
+                                "Crie sua Conta",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.person, color: accountType == 'Cliente' ? Colors.white : Colors.grey), // Ícone de pessoa
+                                onPressed: () => _setAccountType('Cliente'),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 20),
 
-                          // Campos de entrada
-                          _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
-                          _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
-                          _buildPasswordField(),
-                          _buildTextField(eloController, "elo...", Icons.star, "Informe seu elo"),
-                          _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
-                          _buildTextField(cpfController, "CPF...", Icons.document_scanner, "Informe um CPF válido"),
+                          // Campos de entrada baseados no tipo de conta
+                          if (accountType == 'Jogador') ...[
+                            _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
+                            _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
+                            _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
+                            _buildTextField(eloController, "elo...", Icons.star, "Informe seu elo"),
+                            _buildPasswordField(),
+                            _buildConfirmPasswordField(),
+                          ] else if (accountType == 'Cliente') ...[
+                            _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
+                            _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
+                            _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
+                            _buildPasswordField(),
+                            _buildConfirmPasswordField(),
+                          ],
                           const SizedBox(height: 20),
 
                           // Botão de Registro
@@ -80,6 +107,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       snackPosition: SnackPosition.BOTTOM,
                                       backgroundColor: Colors.green,
                                       colorText: Colors.white);
+
+                                  // Navegar para a tela de login após um pequeno delay
+                                  Future.delayed(const Duration(seconds: 2), () {
+                                    Navigator.pop(context); // Altere para a navegação correta para a tela de login
+                                  });
                                 }
                               },
                               borderRadius: BorderRadius.circular(30),
@@ -104,8 +136,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                               GestureDetector(
                                 onTap: () {
-                                  // Navegar para a tela de login
-                                  Navigator.pop(context); // Ou use Get.to(LoginScreen());
+                                  Navigator.pop(context);
                                 },
                                 child: const Text(
                                   "Faça login",
@@ -171,6 +202,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
           hintText: "senha...",
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: const BorderSide(color: Colors.white60),
+          ),
+          fillColor: Colors.white,
+          filled: true,
+        ),
+      ),
+    ));
+  }
+
+  // Método para construir o campo de confirmação de senha
+  Widget _buildConfirmPasswordField() {
+    return Obx(() => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: TextFormField(
+        controller: confirmPasswordController,
+        obscureText: isObsecure.value,
+        validator: (val) => val == "" ? "Informe a confirmação da senha" : null,
+        decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.vpn_key_sharp, color: Colors.black),
+          suffixIcon: GestureDetector(
+            onTap: () {
+              isObsecure.value = !isObsecure.value;
+            },
+            child: Icon(
+              isObsecure.value ? Icons.visibility_off : Icons.visibility,
+              color: Colors.black,
+            ),
+          ),
+          hintText: "confirme a senha...",
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30),
             borderSide: const BorderSide(color: Colors.white60),
