@@ -60,7 +60,7 @@ class _LoginState extends State<Login> {
   void _login() {
     if (formKey.currentState?.validate() ?? false) {
       String role = userType == 'Cliente' ? 'Client' : 'Pro';
-      Get.off(DashboardPage(role: role));
+      Get.off(DashboardPage(role: role, userType: userType));  // Passando também o tipo de usuário
     }
   }
 
@@ -154,7 +154,7 @@ class _LoginState extends State<Login> {
                                     value: 'Cliente',
                                     child: Row(
                                       children: const [
-                                        Icon(Icons.person, color: Colors.black), // Ícone para Cliente
+                                        Icon(Icons.person, color: Colors.black),
                                         SizedBox(width: 8),
                                         Text('Cliente', style: TextStyle(color: Colors.black)),
                                       ],
@@ -164,7 +164,7 @@ class _LoginState extends State<Login> {
                                     value: 'Jogador',
                                     child: Row(
                                       children: const [
-                                        Icon(Icons.gamepad, color: Colors.black), // Ícone para Jogador
+                                        Icon(Icons.gamepad, color: Colors.black),
                                         SizedBox(width: 8),
                                         Text('Jogador', style: TextStyle(color: Colors.black)),
                                       ],
@@ -234,8 +234,9 @@ class _LoginState extends State<Login> {
 // Dashboard
 class DashboardPage extends StatefulWidget {
   final String role;
+  final String userType;  // Tipo de usuário adicionado
 
-  DashboardPage({required this.role});
+  DashboardPage({required this.role, required this.userType});
 
   @override
   _DashboardPageState createState() => _DashboardPageState();
@@ -249,7 +250,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Painel do ${widget.role}'),
-        backgroundColor: Color (0xFF9370DB),
+        backgroundColor: Color(0xFF9370DB),
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app),
@@ -287,35 +288,53 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   List<PopupMenuItem<String>> _getMenuItems() {
-    return [
-      PopupMenuItem<String>(
-        value: 'Dashboard Geral',
-        child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
-      ),
-      PopupMenuItem<String>(
-        value: 'Serviços Pendentes',
-        child: _buildMenuItem(Icons.pending, 'Serviços Pendentes'), // Atualizado
-      ),
-      PopupMenuItem<String>(
-        value: 'Serviços Concluídos',
-        child: _buildMenuItem(Icons.check_circle, 'Serviços Concluídos'), // Atualizado
-      ),
-      if (widget.role == 'Pro')
+    if (widget.userType == 'Cliente') {
+      return [
+        PopupMenuItem<String>(
+          value: 'Dashboard Geral',
+          child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
+        ),
+        PopupMenuItem<String>(
+          value: 'Pedidos Pendentes',
+          child: _buildMenuItem(Icons.pending, 'Pedidos Pendentes'),
+        ),
+        PopupMenuItem<String>(
+          value: 'Pedidos Concluídos',
+          child: _buildMenuItem(Icons.check_circle, 'Pedidos Concluídos'),
+        ),
+        PopupMenuItem<String>(
+          value: 'Chat com o Jogador',
+          child: _buildMenuItem(Icons.chat, 'Chat com o Jogador'),
+        ),
+        PopupMenuItem<String>(
+          value: 'Avaliações',
+          child: _buildMenuItem(Icons.star, 'Avaliações'),  // A opção "Avaliações" para o Cliente
+        ),
+      ];
+    } else {
+      return [
+        PopupMenuItem<String>(
+          value: 'Dashboard Geral',
+          child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
+        ),
+        PopupMenuItem<String>(
+          value: 'Serviços Pendentes',
+          child: _buildMenuItem(Icons.pending, 'Serviços Pendentes'),
+        ),
+        PopupMenuItem<String>(
+          value: 'Serviços Concluídos',
+          child: _buildMenuItem(Icons.check_circle, 'Serviços Concluídos'),
+        ),
         PopupMenuItem<String>(
           value: 'Chat com o Cliente',
           child: _buildMenuItem(Icons.chat, 'Chat com o Cliente'),
         ),
-      if (widget.role == 'Client')
-        PopupMenuItem<String>(
-          value: 'Chat com o Profissional',
-          child: _buildMenuItem(Icons.person, 'Chat com o Profissional'),
-        ),
-      if (widget.role == 'Pro')
         PopupMenuItem<String>(
           value: 'Saque',
-          child: _buildMenuItem(Icons.attach_money, 'Saque'),
+          child: _buildMenuItem(Icons.attach_money, 'Saque'),  // A opção "Saque" para o Jogador
         ),
-    ];
+      ];
+    }
   }
 
   static Widget _buildMenuItem(IconData icon, String text) {
@@ -332,16 +351,22 @@ class _DashboardPageState extends State<DashboardPage> {
     switch (page) {
       case 'Dashboard Geral':
         return 'Bem-vindo ao Dashboard Geral!';
+      case 'Pedidos Pendentes':
+        return 'Aqui estão os pedidos pendentes.';
+      case 'Pedidos Concluídos':
+        return 'Aqui estão os pedidos concluídos.';
       case 'Serviços Pendentes':
-        return 'Aqui estão os serviços pendentes.'; // Atualizado
+        return 'Aqui estão os serviços pendentes.';
       case 'Serviços Concluídos':
-        return 'Aqui estão os serviços concluídos.'; // Atualizado
+        return 'Aqui estão os serviços concluídos.';
+      case 'Chat com o Jogador':
+        return 'Chat com o Jogador';
       case 'Chat com o Cliente':
-        return 'Aqui é o chat com o cliente.';
-      case 'Chat com o Profissional':
-        return 'Aqui é o chat com o profissional.';
+        return 'Chat com o Cliente';
+      case 'Avaliações':
+        return 'Aqui estão as suas avaliações.'; // Página de Avaliações
       case 'Saque':
-        return 'Aqui você pode realizar um saque.';
+        return 'Simulação de Saque';  // Página de Saque
       default:
         return 'Selecione uma opção.';
     }
@@ -363,34 +388,75 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         );
-      case 'Serviços Pendentes':
-        return const Center(child: Text('Aqui estão os serviços pendentes.', style: TextStyle(color: Colors.black)));
-      case 'Serviços Concluídos':
-        return const Center(child: Text('Aqui estão os serviços concluídos.', style: TextStyle(color: Colors.black)));
-      case 'Chat com o Cliente':
-        return const Center(child: Text('Aqui é o chat com o cliente.', style: TextStyle(color: Colors.black)));
-      case 'Chat com o Profissional':
-        return const Center(child: Text('Aqui é o chat com o profissional.', style: TextStyle(color: Colors.black)));
       case 'Saque':
-        return const Center(child: Text('Aqui você pode realizar um saque.', style: TextStyle(color: Colors.black)));
+        return const SaquePage(); // Chama a tela de saque
       default:
-        return const Center(child: Text('Selecione uma opção.', style: TextStyle(color: Colors.black)));
+        return const Center(child: Text('Selecione uma opção.'));
     }
   }
 }
 
-// Tela de Registro (para futuras implementações)
-class SigUpScreen extends StatelessWidget {
-  const SigUpScreen({super.key});
+class SaquePage extends StatefulWidget {
+  const SaquePage({super.key});
+
+  @override
+  State<SaquePage> createState() => _SaquePageState();
+}
+
+class _SaquePageState extends State<SaquePage> {
+  final TextEditingController saqueController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  void _simularSaque() {
+    if (_formKey.currentState?.validate() ?? false) {
+      double valor = double.parse(saqueController.text);
+      // Aqui você pode adicionar a lógica real para saque, se necessário
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saque de R\$ $valor simulado com sucesso!')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registrar'),
-      ),
-      body: const Center(
-        child: Text('Formulário de Registro'),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Simule seu Saque',
+              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: saqueController,
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty || double.tryParse(value) == null) {
+                  return 'Digite um valor válido';
+                }
+                return null;
+              },
+              style: const TextStyle(color: Colors.black),
+              decoration: InputDecoration(
+                labelText: 'Valor do Saque',
+                labelStyle: const TextStyle(color: Colors.black),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _simularSaque,
+              child: const Text('Simular Saque'),
+            ),
+          ],
+        ),
       ),
     );
   }
