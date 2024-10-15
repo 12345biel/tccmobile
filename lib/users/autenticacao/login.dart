@@ -1,15 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:tccmobile/models/servico.dart';
-import 'package:tccmobile/users/autenticacao/sigup_screen.dart';
 import 'dart:async';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:tccmobile/database_helper.dart';
-import 'package:tccmobile/models/pedido.dart';
-import 'package:tccmobile/pages/adicionar_pedido.dart';
-import 'package:tccmobile/users/autenticacao/chat_screen.dart';
-
-
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,9 +18,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           color: Colors.indigo,
-          titleTextStyle: TextStyle(
+          titleTextStyle: const TextStyle(
             color: Color(0xFFA88A6F),
             fontFamily: 'PressStart2P',
           ),
@@ -51,7 +42,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Login
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -70,9 +60,7 @@ class _LoginState extends State<Login> {
   void _login() {
     if (formKey.currentState?.validate() ?? false) {
       String role = userType == 'Cliente' ? 'Client' : 'Pro';
-
-      // Redireciona para a página do painel com a função Get.off
-      Get.off(() => DashboardPage(role: role, userType: userType));
+      Get.off(DashboardPage(role: role, userType: userType));
     }
   }
 
@@ -116,9 +104,7 @@ class _LoginState extends State<Login> {
                             children: [
                               TextFormField(
                                 controller: emailController,
-                                validator: (val) => val == ""
-                                    ? "Informe um email válido"
-                                    : null,
+                                validator: (val) => val == "" ? "Informe um email válido" : null,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.email, color: Colors.black),
                                   hintText: "email...",
@@ -134,9 +120,7 @@ class _LoginState extends State<Login> {
                               Obx(() => TextFormField(
                                 controller: passwordController,
                                 obscureText: isObsecure.value,
-                                validator: (val) => val == ""
-                                    ? "Informe uma senha válida"
-                                    : null,
+                                validator: (val) => val == "" ? "Informe uma senha válida" : null,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.vpn_key_sharp, color: Colors.black),
                                   suffixIcon: GestureDetector(
@@ -247,12 +231,12 @@ class _LoginState extends State<Login> {
   }
 }
 
-// Dashboard
+//Dashboard
 class DashboardPage extends StatefulWidget {
   final String role;
   final String userType;
 
-  const DashboardPage({super.key, required this.role, required this.userType});
+  DashboardPage({required this.role, required this.userType});
 
   @override
   _DashboardPageState createState() => _DashboardPageState();
@@ -260,25 +244,142 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   String selectedPage = 'Dashboard Geral';
-  Duration loginDuration = Duration(); // Variável para armazenar o tempo de login
-  Timer? timer; // Timer para atualizar o tempo
-  bool showLoginDuration = false; // Variável para controlar a exibição do tempo
+  late Timer _timer;
+  late Timer _reminderTimer;
+  Duration _loggedInDuration = Duration();
+  String _reminderMessage = '';
+  final TextEditingController _withdrawalController = TextEditingController();
+
+  // Exemplos de serviços e pedidos do cliente
+  final List<Map<String, dynamic>> pendingClientOrders = [
+    {
+      'tipo': 'Coating',
+      'data': '01/10/2023',
+      'valor': 100.0,
+      'horario': '14:00',
+    },
+    {
+      'tipo': 'Boosting',
+      'data': '05/10/2023',
+      'valor': 150.0,
+      'horario': '15:30',
+    },
+  ];
+
+  final List<Map<String, dynamic>> completedClientOrders = [
+    {
+      'tipo': 'Coating',
+      'data': '02/10/2023',
+      'valor': 80.0,
+      'horario': '10:00',
+    },
+    {
+      'tipo': 'Boosting',
+      'data': '06/10/2023',
+      'valor': 120.0,
+      'horario': '16:00',
+    },
+  ];
+
+  // Exemplos de serviços do jogador
+  final List<Map<String, dynamic>> pendingPlayerServices = [
+    {
+      'tipo': 'Match Coaching',
+      'data': '03/10/2023',
+      'valor': 200.0,
+      'horario': '12:00',
+    },
+    {
+      'tipo': 'Performance Review',
+      'data': '07/10/2023',
+      'valor': 180.0,
+      'horario': '18:00',
+    },
+  ];
+
+  final List<Map<String, dynamic>> completedPlayerServices = [
+    {
+      'tipo': 'Match Analysis',
+      'data': '04/10/2023',
+      'valor': 150.0,
+      'horario': '15:00',
+    },
+    {
+      'tipo': 'Training Session',
+      'data': '08/10/2023',
+      'valor': 220.0,
+      'horario': '10:30',
+    },
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Iniciar o timer que atualiza a duração de login a cada segundo
-    timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      setState(() {
-        loginDuration += Duration(seconds: 1);
-      });
-    });
+    _startTimer();
+    _startReminderTimer();
   }
 
   @override
   void dispose() {
-    timer?.cancel(); // Cancelar o timer ao sair da tela
+    _timer.cancel();
+    _reminderTimer.cancel();
+    _withdrawalController.dispose();
     super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        _loggedInDuration += Duration(seconds: 1);
+      });
+    });
+  }
+
+  void _startReminderTimer() {
+    _reminderTimer = Timer.periodic(Duration(seconds: 90), (timer) {
+      _showReminder();
+    });
+  }
+
+  String getDurationString() {
+    int hours = _loggedInDuration.inHours;
+    int minutes = (_loggedInDuration.inMinutes % 60);
+    int seconds = (_loggedInDuration.inSeconds % 60);
+    return "$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+  }
+
+  void _showReminder() {
+    setState(() {
+      _reminderMessage = "Lembrete: Você está logado há ${getDurationString()}!";
+    });
+
+    Timer(Duration(seconds: 15), () {
+      setState(() {
+        _reminderMessage = '';
+      });
+    });
+  }
+
+  void _simulateWithdrawal() {
+    final double? amount = double.tryParse(_withdrawalController.text);
+    if (amount != null && amount > 0) {
+      _withdrawalController.clear();
+      Get.snackbar(
+        "Saque Realizado",
+        "Você sacou R\$${amount.toStringAsFixed(2)} com sucesso!",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+      );
+    } else {
+      Get.snackbar(
+        "Erro",
+        "Por favor, insira um valor válido!",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override
@@ -289,12 +390,11 @@ class _DashboardPageState extends State<DashboardPage> {
         backgroundColor: Color(0xFF9370DB),
         actions: [
           IconButton(
-            icon: FaIcon(FontAwesomeIcons.clock, color: Colors.white),
+            icon: const Icon(Icons.access_time),
             onPressed: () {
-              setState(() {
-                showLoginDuration = !showLoginDuration; // Alterna a exibição do tempo
-              });
+              _showLoggedInDuration();
             },
+            tooltip: 'Horário',
           ),
           IconButton(
             icon: const Icon(Icons.exit_to_app),
@@ -317,184 +417,253 @@ class _DashboardPageState extends State<DashboardPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(
-              child: Text(
-                showLoginDuration ? 'Tempo de login: ${loginDuration.inSeconds} segundos' : '',
-                style: const TextStyle(color: Colors.black),
-              ),
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              getPageTitle(selectedPage),
+              style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ),
-          Expanded(child: _getPageContent(selectedPage)),
+          if (_reminderMessage.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                _reminderMessage,
+                style: TextStyle(fontSize: 20, color: Colors.red),
+              ),
+            ),
+          Expanded(
+            child: getPageContent(),
+          ),
+          if (selectedPage == 'Saque')
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _withdrawalController,
+                    decoration: InputDecoration(
+                      labelText: 'Valor do Saque',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _simulateWithdrawal,
+                    child: Text('Realizar Saque'),
+                  ),
+                  SizedBox(height: 10),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  List<PopupMenuEntry<String>> _getMenuItems() {
+  void _showLoggedInDuration() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Tempo Logado"),
+          content: Text("Você está logado há: ${getDurationString()}"),
+          actions: [
+            TextButton(
+              child: const Text("Fechar"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<PopupMenuItem<String>> _getMenuItems() {
     return [
-      const PopupMenuItem(value: 'Dashboard Geral', child: Text('Dashboard Geral')),
-      const PopupMenuItem(value: 'Adicionar Pedido', child: Text('Adicionar Pedido')),
-      const PopupMenuItem(value: 'Chat', child: Text('Chat')),
+      PopupMenuItem<String>(
+        value: 'Dashboard Geral',
+        child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
+      ),
+      PopupMenuItem<String>(
+        value: widget.userType == 'Cliente' ? 'Pedidos Pendentes' : 'Serviços Pendentes',
+        child: _buildMenuItem(Icons.pending, widget.userType == 'Cliente' ? 'Pedidos Pendentes' : 'Serviços Pendentes'),
+      ),
+      PopupMenuItem<String>(
+        value: widget.userType == 'Cliente' ? 'Pedidos Concluídos' : 'Serviços Concluídos',
+        child: _buildMenuItem(Icons.check_circle, widget.userType == 'Cliente' ? 'Pedidos Concluídos' : 'Serviços Concluídos'),
+      ),
+      if (widget.role == 'Pro')
+        PopupMenuItem<String>(
+          value: 'Chat com o Cliente',
+          child: _buildMenuItem(Icons.chat, 'Chat com o Cliente'),
+        ),
+      if (widget.role == 'Client')
+        PopupMenuItem<String>(
+          value: 'Chat com o Profissional',
+          child: _buildMenuItem(Icons.person, 'Chat com o Profissional'),
+        ),
+      if (widget.role == 'Pro')
+        PopupMenuItem<String>(
+          value: 'Saque',
+          child: _buildMenuItem(Icons.attach_money, 'Saque'),
+        ),
     ];
   }
 
-  Widget _getPageContent(String selectedPage) {
-    switch (selectedPage) {
-      case 'Adicionar Pedido':
-        return AdicionarPedido();
-      case 'Chat':
-        return ChatScreen();
+  Widget _buildMenuItem(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.black),
+        const SizedBox(width: 8),
+        Text(text, style: const TextStyle(color: Colors.black)),
+      ],
+    );
+  }
+
+  String getPageTitle(String page) {
+    switch (page) {
       case 'Dashboard Geral':
+        return 'Bem-vindo ao Dashboard Geral!';
+      case 'Pedidos Pendentes':
+        return 'Aqui estão os pedidos pendentes.';
+      case 'Pedidos Concluídos':
+        return 'Aqui estão os pedidos concluídos.';
+      case 'Serviços Pendentes':
+        return 'Aqui estão os serviços pendentes.';
+      case 'Serviços Concluídos':
+        return 'Aqui estão os serviços concluídos.';
+      case 'Saque':
+        return 'Simulação de Saque';
+      case 'Chat com o Cliente':
+        return 'Chat com o Cliente';
+      case 'Chat com o Profissional':
+        return 'Chat com o Profissional';
       default:
-        return Center(child: Text('Bem-vindo ao Dashboard!'));
+        return 'Dashboard Geral';
+    }
+  }
+
+  Widget getPageContent() {
+    switch (selectedPage) {
+      case 'Dashboard Geral':
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.dashboard, size: 80, color: Colors.indigo),
+              SizedBox(height: 20),
+              Text(
+                'Esta é uma visão geral do seu painel.',
+                style: TextStyle(color: Colors.black, fontSize: 18),
+              ),
+            ],
+          ),
+        );
+      case 'Pedidos Pendentes':
+        return ListView.builder(
+          itemCount: pendingClientOrders.length,
+          itemBuilder: (context, index) {
+            final order = pendingClientOrders[index];
+            return ListTile(
+              title: Text(
+                '${order['tipo']} - R\$${order['valor'].toStringAsFixed(2)}',
+                style: TextStyle(color: Colors.black),
+              ),
+              subtitle: Text(
+                'Data: ${order['data']} - Horário: ${order['horario']}',
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          },
+        );
+      case 'Pedidos Concluídos':
+        return ListView.builder(
+          itemCount: completedClientOrders.length,
+          itemBuilder: (context, index) {
+            final order = completedClientOrders[index];
+            return ListTile(
+              title: Text(
+                '${order['tipo']} - R\$${order['valor'].toStringAsFixed(2)}',
+                style: TextStyle(color: Colors.black),
+              ),
+              subtitle: Text(
+                'Data: ${order['data']} - Horário: ${order['horario']}',
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          },
+        );
+      case 'Serviços Pendentes':
+        return ListView.builder(
+          itemCount: pendingPlayerServices.length,
+          itemBuilder: (context, index) {
+            final service = pendingPlayerServices[index];
+            return ListTile(
+              title: Text(
+                '${service['tipo']} - R\$${service['valor'].toStringAsFixed(2)}',
+                style: TextStyle(color: Colors.black),
+              ),
+              subtitle: Text(
+                'Data: ${service['data']} - Horário: ${service['horario']}',
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          },
+        );
+      case 'Serviços Concluídos':
+        return ListView.builder(
+          itemCount: completedPlayerServices.length,
+          itemBuilder: (context, index) {
+            final service = completedPlayerServices[index];
+            return ListTile(
+              title: Text(
+                '${service['tipo']} - R\$${service['valor'].toStringAsFixed(2)}',
+                style: TextStyle(color: Colors.black),
+              ),
+              subtitle: Text(
+                'Data: ${service['data']} - Horário: ${service['horario']}',
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          },
+        );
+      case 'Chat com o Cliente':
+        return const Center(child: Text('Aqui é o chat com o cliente.', style: TextStyle(color: Colors.black)));
+      case 'Chat com o Profissional':
+        return const Center(child: Text('Aqui é o chat com o profissional.', style: TextStyle(color: Colors.black)));
+      case 'Saque':
+        return const Center(child: Text('Aqui você pode realizar um saque.', style: TextStyle(color: Colors.black)));
+      default:
+        return const Center(child: Text('Selecione uma opção.', style: TextStyle(color: Colors.black)));
     }
   }
 }
 
-
-// Tela de Pedidos
-class PedidosPage extends StatelessWidget {
-  final String status;
-
-  const PedidosPage({super.key, required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    // Aqui você pode buscar os pedidos com base no status
-    List<Pedido> pedidos = [
-      Pedido(
-        id: '1',
-        clienteId: 'Cliente1',
-        status: status,
-        data: Pedido.dateTimeToString(DateTime.now()), descricao: '', // Converte DateTime para String
-      ),
-      Pedido(
-        id: '2',
-        clienteId: 'Cliente2',
-        status: status,
-        data: Pedido.dateTimeToString(DateTime.now().subtract(Duration(days: 1))), descricao: '', // Converte DateTime para String
-      ),
-    ];
-
-
-    return ListView.builder(
-      itemCount: pedidos.length,
-      itemBuilder: (context, index) {
-        final pedido = pedidos[index];
-        return ListTile(
-          title: Text('Pedido ${pedido.id} - ${pedido.status}'),
-          subtitle: Text('Data: ${pedido.data}'),
-        );
-      },
-    );
-  }
-}
-
-// Tela de Serviços
-class ServicosPage extends StatelessWidget {
-  final String status;
-
-  const ServicosPage({super.key, required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    // Aqui você pode buscar os serviços com base no status
-    List<Servico> servicos = [
-      Servico(
-        id: '1',
-        jogadorId: 'Jogador1',
-        tipo: 'Game Boosting',
-        status: status,
-        data: Servico.dateTimeToString(DateTime.now()), // Converte DateTime para String
-      ),
-      Servico(
-        id: '2',
-        jogadorId: 'Jogador2',
-        tipo: 'Coaching',
-        status: status,
-        data: Servico.dateTimeToString(DateTime.now().subtract(Duration(days: 1))), // Converte DateTime para String
-      ),
-    ];
-
-
-    return ListView.builder(
-      itemCount: servicos.length,
-      itemBuilder: (context, index) {
-        final servico = servicos[index];
-        return ListTile(
-          title: Text('Serviço ${servico.id} - ${servico.tipo} - ${servico.status}'),
-          subtitle: Text('Data: ${servico.data}'),
-        );
-      },
-    );
-  }
-}
-
-// Tela de Saque
-class SaquePage extends StatefulWidget {
-  const SaquePage({super.key});
-
-  @override
-  State<SaquePage> createState() => _SaquePageState();
-}
-
-class _SaquePageState extends State<SaquePage> {
-  final TextEditingController saqueController = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  void _simularSaque() {
-    if (_formKey.currentState?.validate() ?? false) {
-      double valor = double.parse(saqueController.text);
-      ScaffoldMessenger.of(context as BuildContext).showSnackBar(
-        SnackBar(content: Text('Saque de R\$ $valor simulado com sucesso!')),
-      );
-    }
-  }
+// Tela de Registro (para futuras implementações)
+class SignUpScreen extends StatelessWidget {
+  const SignUpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Simular Saque')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Simule seu Saque',
-                style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: saqueController,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty || double.tryParse(value) == null) {
-                    return 'Digite um valor válido';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  labelText: 'Valor do Saque',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _simularSaque,
-                child: const Text('Simular Saque'),
-              ),
-            ],
-          ),
-        ),
+      appBar: AppBar(
+        title: const Text('Registrar'),
+      ),
+      body: const Center(
+        child: Text('Formulário de Registro'),
       ),
     );
   }
 }
+
+
 

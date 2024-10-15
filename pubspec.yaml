@@ -31,14 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   get: ^4.6.5
-  firebase_core: ^2.14.0
-  firebase_auth: ^4.5.0
-  cloud_firestore: ^4.17.5
-  font_awesome_flutter: ^10.0.0
-  sqflite: ^2.0.0+4
-  path: ^1.8.0
-  path_provider: ^2.0.2
-
+  marquee: ^2.0.0
 
 
 
