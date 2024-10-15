@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'sigup_screen.dart';
+import 'package:tccmobile/models/servico.dart';
+import 'package:tccmobile/users/autenticacao/sigup_screen.dart';
+import 'dart:async';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:tccmobile/database_helper.dart';
+import 'package:tccmobile/models/pedido.dart';
+import 'package:tccmobile/pages/adicionar_pedido.dart';
+import 'package:tccmobile/users/autenticacao/chat_screen.dart';
+
+
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +27,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           color: Colors.indigo,
-          titleTextStyle: const TextStyle(
+          titleTextStyle: TextStyle(
             color: Color(0xFFA88A6F),
             fontFamily: 'PressStart2P',
           ),
@@ -42,6 +51,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// Login
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -60,7 +70,9 @@ class _LoginState extends State<Login> {
   void _login() {
     if (formKey.currentState?.validate() ?? false) {
       String role = userType == 'Cliente' ? 'Client' : 'Pro';
-      Get.off(DashboardPage(role: role, userType: userType));  // Passando também o tipo de usuário
+
+      // Redireciona para a página do painel com a função Get.off
+      Get.off(() => DashboardPage(role: role, userType: userType));
     }
   }
 
@@ -104,7 +116,9 @@ class _LoginState extends State<Login> {
                             children: [
                               TextFormField(
                                 controller: emailController,
-                                validator: (val) => val == "" ? "Informe um email válido" : null,
+                                validator: (val) => val == ""
+                                    ? "Informe um email válido"
+                                    : null,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.email, color: Colors.black),
                                   hintText: "email...",
@@ -120,7 +134,9 @@ class _LoginState extends State<Login> {
                               Obx(() => TextFormField(
                                 controller: passwordController,
                                 obscureText: isObsecure.value,
-                                validator: (val) => val == "" ? "Informe uma senha válida" : null,
+                                validator: (val) => val == ""
+                                    ? "Informe uma senha válida"
+                                    : null,
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(Icons.vpn_key_sharp, color: Colors.black),
                                   suffixIcon: GestureDetector(
@@ -234,9 +250,9 @@ class _LoginState extends State<Login> {
 // Dashboard
 class DashboardPage extends StatefulWidget {
   final String role;
-  final String userType;  // Tipo de usuário adicionado
+  final String userType;
 
-  DashboardPage({required this.role, required this.userType});
+  const DashboardPage({super.key, required this.role, required this.userType});
 
   @override
   _DashboardPageState createState() => _DashboardPageState();
@@ -244,6 +260,26 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   String selectedPage = 'Dashboard Geral';
+  Duration loginDuration = Duration(); // Variável para armazenar o tempo de login
+  Timer? timer; // Timer para atualizar o tempo
+  bool showLoginDuration = false; // Variável para controlar a exibição do tempo
+
+  @override
+  void initState() {
+    super.initState();
+    // Iniciar o timer que atualiza a duração de login a cada segundo
+    timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
+      setState(() {
+        loginDuration += Duration(seconds: 1);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel(); // Cancelar o timer ao sair da tela
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +288,14 @@ class _DashboardPageState extends State<DashboardPage> {
         title: Text('Painel do ${widget.role}'),
         backgroundColor: Color(0xFF9370DB),
         actions: [
+          IconButton(
+            icon: FaIcon(FontAwesomeIcons.clock, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                showLoginDuration = !showLoginDuration; // Alterna a exibição do tempo
+              });
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: () {
@@ -263,7 +307,7 @@ class _DashboardPageState extends State<DashboardPage> {
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               setState(() {
-                selectedPage = value!;
+                selectedPage = value;
               });
             },
             itemBuilder: (context) => _getMenuItems(),
@@ -273,129 +317,121 @@ class _DashboardPageState extends State<DashboardPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              getPageTitle(selectedPage),
-              style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+              child: Text(
+                showLoginDuration ? 'Tempo de login: ${loginDuration.inSeconds} segundos' : '',
+                style: const TextStyle(color: Colors.black),
+              ),
             ),
           ),
-          Expanded(
-            child: getPageContent(),
-          ),
+          Expanded(child: _getPageContent(selectedPage)),
         ],
       ),
     );
   }
 
-  List<PopupMenuItem<String>> _getMenuItems() {
-    if (widget.userType == 'Cliente') {
-      return [
-        PopupMenuItem<String>(
-          value: 'Dashboard Geral',
-          child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Pedidos Pendentes',
-          child: _buildMenuItem(Icons.pending, 'Pedidos Pendentes'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Pedidos Concluídos',
-          child: _buildMenuItem(Icons.check_circle, 'Pedidos Concluídos'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Chat com o Jogador',
-          child: _buildMenuItem(Icons.chat, 'Chat com o Jogador'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Avaliações',
-          child: _buildMenuItem(Icons.star, 'Avaliações'),  // A opção "Avaliações" para o Cliente
-        ),
-      ];
-    } else {
-      return [
-        PopupMenuItem<String>(
-          value: 'Dashboard Geral',
-          child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Serviços Pendentes',
-          child: _buildMenuItem(Icons.pending, 'Serviços Pendentes'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Serviços Concluídos',
-          child: _buildMenuItem(Icons.check_circle, 'Serviços Concluídos'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Chat com o Cliente',
-          child: _buildMenuItem(Icons.chat, 'Chat com o Cliente'),
-        ),
-        PopupMenuItem<String>(
-          value: 'Saque',
-          child: _buildMenuItem(Icons.attach_money, 'Saque'),  // A opção "Saque" para o Jogador
-        ),
-      ];
-    }
+  List<PopupMenuEntry<String>> _getMenuItems() {
+    return [
+      const PopupMenuItem(value: 'Dashboard Geral', child: Text('Dashboard Geral')),
+      const PopupMenuItem(value: 'Adicionar Pedido', child: Text('Adicionar Pedido')),
+      const PopupMenuItem(value: 'Chat', child: Text('Chat')),
+    ];
   }
 
-  static Widget _buildMenuItem(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.black),
-        const SizedBox(width: 8),
-        Text(text, style: const TextStyle(color: Colors.black)),
-      ],
-    );
-  }
-
-  String getPageTitle(String page) {
-    switch (page) {
-      case 'Dashboard Geral':
-        return 'Bem-vindo ao Dashboard Geral!';
-      case 'Pedidos Pendentes':
-        return 'Aqui estão os pedidos pendentes.';
-      case 'Pedidos Concluídos':
-        return 'Aqui estão os pedidos concluídos.';
-      case 'Serviços Pendentes':
-        return 'Aqui estão os serviços pendentes.';
-      case 'Serviços Concluídos':
-        return 'Aqui estão os serviços concluídos.';
-      case 'Chat com o Jogador':
-        return 'Chat com o Jogador';
-      case 'Chat com o Cliente':
-        return 'Chat com o Cliente';
-      case 'Avaliações':
-        return 'Aqui estão as suas avaliações.'; // Página de Avaliações
-      case 'Saque':
-        return 'Simulação de Saque';  // Página de Saque
-      default:
-        return 'Selecione uma opção.';
-    }
-  }
-
-  Widget getPageContent() {
+  Widget _getPageContent(String selectedPage) {
     switch (selectedPage) {
+      case 'Adicionar Pedido':
+        return AdicionarPedido();
+      case 'Chat':
+        return ChatScreen();
       case 'Dashboard Geral':
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.dashboard, size: 80, color: Colors.indigo),
-              SizedBox(height: 20),
-              Text(
-                'Esta é uma visão geral do seu painel.',
-                style: TextStyle(color: Colors.black, fontSize: 18),
-              ),
-            ],
-          ),
-        );
-      case 'Saque':
-        return const SaquePage(); // Chama a tela de saque
       default:
-        return const Center(child: Text('Selecione uma opção.'));
+        return Center(child: Text('Bem-vindo ao Dashboard!'));
     }
   }
 }
 
+
+// Tela de Pedidos
+class PedidosPage extends StatelessWidget {
+  final String status;
+
+  const PedidosPage({super.key, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    // Aqui você pode buscar os pedidos com base no status
+    List<Pedido> pedidos = [
+      Pedido(
+        id: '1',
+        clienteId: 'Cliente1',
+        status: status,
+        data: Pedido.dateTimeToString(DateTime.now()), descricao: '', // Converte DateTime para String
+      ),
+      Pedido(
+        id: '2',
+        clienteId: 'Cliente2',
+        status: status,
+        data: Pedido.dateTimeToString(DateTime.now().subtract(Duration(days: 1))), descricao: '', // Converte DateTime para String
+      ),
+    ];
+
+
+    return ListView.builder(
+      itemCount: pedidos.length,
+      itemBuilder: (context, index) {
+        final pedido = pedidos[index];
+        return ListTile(
+          title: Text('Pedido ${pedido.id} - ${pedido.status}'),
+          subtitle: Text('Data: ${pedido.data}'),
+        );
+      },
+    );
+  }
+}
+
+// Tela de Serviços
+class ServicosPage extends StatelessWidget {
+  final String status;
+
+  const ServicosPage({super.key, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    // Aqui você pode buscar os serviços com base no status
+    List<Servico> servicos = [
+      Servico(
+        id: '1',
+        jogadorId: 'Jogador1',
+        tipo: 'Game Boosting',
+        status: status,
+        data: Servico.dateTimeToString(DateTime.now()), // Converte DateTime para String
+      ),
+      Servico(
+        id: '2',
+        jogadorId: 'Jogador2',
+        tipo: 'Coaching',
+        status: status,
+        data: Servico.dateTimeToString(DateTime.now().subtract(Duration(days: 1))), // Converte DateTime para String
+      ),
+    ];
+
+
+    return ListView.builder(
+      itemCount: servicos.length,
+      itemBuilder: (context, index) {
+        final servico = servicos[index];
+        return ListTile(
+          title: Text('Serviço ${servico.id} - ${servico.tipo} - ${servico.status}'),
+          subtitle: Text('Data: ${servico.data}'),
+        );
+      },
+    );
+  }
+}
+
+// Tela de Saque
 class SaquePage extends StatefulWidget {
   const SaquePage({super.key});
 
@@ -410,8 +446,7 @@ class _SaquePageState extends State<SaquePage> {
   void _simularSaque() {
     if (_formKey.currentState?.validate() ?? false) {
       double valor = double.parse(saqueController.text);
-      // Aqui você pode adicionar a lógica real para saque, se necessário
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context as BuildContext).showSnackBar(
         SnackBar(content: Text('Saque de R\$ $valor simulado com sucesso!')),
       );
     }
@@ -419,45 +454,47 @@ class _SaquePageState extends State<SaquePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Simule seu Saque',
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: saqueController,
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty || double.tryParse(value) == null) {
-                  return 'Digite um valor válido';
-                }
-                return null;
-              },
-              style: const TextStyle(color: Colors.black),
-              decoration: InputDecoration(
-                labelText: 'Valor do Saque',
-                labelStyle: const TextStyle(color: Colors.black),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Simular Saque')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Simule seu Saque',
+                style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: saqueController,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty || double.tryParse(value) == null) {
+                    return 'Digite um valor válido';
+                  }
+                  return null;
+                },
+                decoration: InputDecoration(
+                  labelText: 'Valor do Saque',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _simularSaque,
-              child: const Text('Simular Saque'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _simularSaque,
+                child: const Text('Simular Saque'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
