@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:tccmobile/users/autenticacao/sigup_screen.dart';
+// import 'package:tccmobile/users/dashboard/dashboard_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,10 +61,38 @@ class _LoginState extends State<Login> {
 
   String userType = 'Cliente';
 
-  void _login() {
+  Future<void> _login() async {
     if (formKey.currentState?.validate() ?? false) {
       String role = userType == 'Cliente' ? 'Client' : 'Pro';
-      Get.off(DashboardPage(role: role, userType: userType));
+
+      // URL do seu backend PHP
+      final url = 'http://http://192.168.15.126//mobile/conexao.php'; // Altere para o caminho correto do seu servidor
+
+      // Chamada HTTP POST para login
+      final response = await http.post(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'email': emailController.text,
+          'password': passwordController.text,
+          'role': role,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Analisando a resposta
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          Get.off(DashboardPage(role: role, userType: userType)); // Navega para a página do dashboard
+        } else {
+          // Mostra mensagem de erro
+          Get.snackbar("Erro", data['message'], snackPosition: SnackPosition.BOTTOM);
+        }
+      } else {
+        Get.snackbar("Erro", "Falha ao conectar ao servidor", snackPosition: SnackPosition.BOTTOM);
+      }
     }
   }
 
@@ -231,7 +263,8 @@ class _LoginState extends State<Login> {
   }
 }
 
-//Dashboard
+
+// Dashboard
 class DashboardPage extends StatefulWidget {
   final String role;
   final String userType;
@@ -252,64 +285,24 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // Exemplos de serviços e pedidos do cliente
   final List<Map<String, dynamic>> pendingClientOrders = [
-    {
-      'tipo': 'Coating',
-      'data': '01/10/2023',
-      'valor': 100.0,
-      'horario': '14:00',
-    },
-    {
-      'tipo': 'Boosting',
-      'data': '05/10/2023',
-      'valor': 150.0,
-      'horario': '15:30',
-    },
+    {'tipo': 'Coating', 'data': '01/10/2023', 'valor': 100.0, 'horario': '14:00'},
+    {'tipo': 'Boosting', 'data': '05/10/2023', 'valor': 150.0, 'horario': '15:30'},
   ];
 
   final List<Map<String, dynamic>> completedClientOrders = [
-    {
-      'tipo': 'Coating',
-      'data': '02/10/2023',
-      'valor': 80.0,
-      'horario': '10:00',
-    },
-    {
-      'tipo': 'Boosting',
-      'data': '06/10/2023',
-      'valor': 120.0,
-      'horario': '16:00',
-    },
+    {'tipo': 'Coating', 'data': '02/10/2023', 'valor': 80.0, 'horario': '10:00'},
+    {'tipo': 'Boosting', 'data': '06/10/2023', 'valor': 120.0, 'horario': '16:00'},
   ];
 
   // Exemplos de serviços do jogador
   final List<Map<String, dynamic>> pendingPlayerServices = [
-    {
-      'tipo': 'Match Coaching',
-      'data': '03/10/2023',
-      'valor': 200.0,
-      'horario': '12:00',
-    },
-    {
-      'tipo': 'Performance Review',
-      'data': '07/10/2023',
-      'valor': 180.0,
-      'horario': '18:00',
-    },
+    {'tipo': 'Match Coaching', 'data': '03/10/2023', 'valor': 200.0, 'horario': '12:00'},
+    {'tipo': 'Performance Review', 'data': '07/10/2023', 'valor': 180.0, 'horario': '18:00'},
   ];
 
   final List<Map<String, dynamic>> completedPlayerServices = [
-    {
-      'tipo': 'Match Analysis',
-      'data': '04/10/2023',
-      'valor': 150.0,
-      'horario': '15:00',
-    },
-    {
-      'tipo': 'Training Session',
-      'data': '08/10/2023',
-      'valor': 220.0,
-      'horario': '10:30',
-    },
+    {'tipo': 'Match Analysis', 'data': '04/10/2023', 'valor': 150.0, 'horario': '15:00'},
+    {'tipo': 'Training Session', 'data': '08/10/2023', 'valor': 220.0, 'horario': '10:30'},
   ];
 
   @override
@@ -353,12 +346,14 @@ class _DashboardPageState extends State<DashboardPage> {
       _reminderMessage = "Lembrete: Você está logado há ${getDurationString()}!";
     });
 
+    // Remover a mensagem de lembrete após 15 segundos
     Timer(Duration(seconds: 15), () {
       setState(() {
         _reminderMessage = '';
       });
     });
   }
+
 
   void _simulateWithdrawal() {
     final double? amount = double.tryParse(_withdrawalController.text);
@@ -541,47 +536,28 @@ class _DashboardPageState extends State<DashboardPage> {
         return 'Aqui estão os serviços pendentes.';
       case 'Serviços Concluídos':
         return 'Aqui estão os serviços concluídos.';
-      case 'Saque':
-        return 'Simulação de Saque';
       case 'Chat com o Cliente':
-        return 'Chat com o Cliente';
+        return 'Converse com o cliente aqui.';
       case 'Chat com o Profissional':
-        return 'Chat com o Profissional';
+        return 'Converse com o profissional aqui.';
+      case 'Saque':
+        return 'Realize seu saque aqui.';
       default:
-        return 'Dashboard Geral';
+        return '';
     }
   }
 
   Widget getPageContent() {
     switch (selectedPage) {
       case 'Dashboard Geral':
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.dashboard, size: 80, color: Colors.indigo),
-              SizedBox(height: 20),
-              Text(
-                'Esta é uma visão geral do seu painel.',
-                style: TextStyle(color: Colors.black, fontSize: 18),
-              ),
-            ],
-          ),
-        );
+        return Center(child: Text('Conteúdo do Dashboard Geral'));
       case 'Pedidos Pendentes':
         return ListView.builder(
           itemCount: pendingClientOrders.length,
           itemBuilder: (context, index) {
-            final order = pendingClientOrders[index];
             return ListTile(
-              title: Text(
-                '${order['tipo']} - R\$${order['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${order['data']} - Horário: ${order['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
+              title: Text('Tipo: ${pendingClientOrders[index]['tipo']}'),
+              subtitle: Text('Data: ${pendingClientOrders[index]['data']} - Horário: ${pendingClientOrders[index]['horario']} - Valor: R\$${pendingClientOrders[index]['valor']}'),
             );
           },
         );
@@ -589,16 +565,9 @@ class _DashboardPageState extends State<DashboardPage> {
         return ListView.builder(
           itemCount: completedClientOrders.length,
           itemBuilder: (context, index) {
-            final order = completedClientOrders[index];
             return ListTile(
-              title: Text(
-                '${order['tipo']} - R\$${order['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${order['data']} - Horário: ${order['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
+              title: Text('Tipo: ${completedClientOrders[index]['tipo']}'),
+              subtitle: Text('Data: ${completedClientOrders[index]['data']} - Horário: ${completedClientOrders[index]['horario']} - Valor: R\$${completedClientOrders[index]['valor']}'),
             );
           },
         );
@@ -606,16 +575,9 @@ class _DashboardPageState extends State<DashboardPage> {
         return ListView.builder(
           itemCount: pendingPlayerServices.length,
           itemBuilder: (context, index) {
-            final service = pendingPlayerServices[index];
             return ListTile(
-              title: Text(
-                '${service['tipo']} - R\$${service['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${service['data']} - Horário: ${service['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
+              title: Text('Tipo: ${pendingPlayerServices[index]['tipo']}'),
+              subtitle: Text('Data: ${pendingPlayerServices[index]['data']} - Horário: ${pendingPlayerServices[index]['horario']} - Valor: R\$${pendingPlayerServices[index]['valor']}'),
             );
           },
         );
@@ -623,45 +585,20 @@ class _DashboardPageState extends State<DashboardPage> {
         return ListView.builder(
           itemCount: completedPlayerServices.length,
           itemBuilder: (context, index) {
-            final service = completedPlayerServices[index];
             return ListTile(
-              title: Text(
-                '${service['tipo']} - R\$${service['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${service['data']} - Horário: ${service['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
+              title: Text('Tipo: ${completedPlayerServices[index]['tipo']}'),
+              subtitle: Text('Data: ${completedPlayerServices[index]['data']} - Horário: ${completedPlayerServices[index]['horario']} - Valor: R\$${completedPlayerServices[index]['valor']}'),
             );
           },
         );
       case 'Chat com o Cliente':
-        return const Center(child: Text('Aqui é o chat com o cliente.', style: TextStyle(color: Colors.black)));
       case 'Chat com o Profissional':
-        return const Center(child: Text('Aqui é o chat com o profissional.', style: TextStyle(color: Colors.black)));
+        return Center(child: Text('Conteúdo do Chat'));
       case 'Saque':
-        return const Center(child: Text('Aqui você pode realizar um saque.', style: TextStyle(color: Colors.black)));
+        return Center(child: Text('Conteúdo do Saque'));
       default:
-        return const Center(child: Text('Selecione uma opção.', style: TextStyle(color: Colors.black)));
+        return Center(child: Text('Selecione uma página'));
     }
-  }
-}
-
-// Tela de Registro (para futuras implementações)
-class SignUpScreen extends StatelessWidget {
-  const SignUpScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registrar'),
-      ),
-      body: const Center(
-        child: Text('Formulário de Registro'),
-      ),
-    );
   }
 }
 
