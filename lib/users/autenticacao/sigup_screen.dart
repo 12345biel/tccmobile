@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tccmobile/users/autenticacao/login.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,6 +15,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final eloController = TextEditingController();
+  final addressController = TextEditingController(); // Novo controlador
+  final birthDateController = TextEditingController(); // Novo controlador
+  final genderController = TextEditingController(); // Novo controlador
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   final isObsecure = true.obs;
@@ -59,7 +63,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
-                                icon: Icon(Icons.gamepad, color: accountType == 'Jogador' ? Colors.white : Colors.grey), // Ícone de controle de videogame
+                                icon: Icon(Icons.gamepad, color: accountType == 'Jogador' ? Colors.white : Colors.grey),
                                 onPressed: () => _setAccountType('Jogador'),
                               ),
                               Text(
@@ -71,7 +75,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                               ),
                               IconButton(
-                                icon: Icon(Icons.person, color: accountType == 'Cliente' ? Colors.white : Colors.grey), // Ícone de pessoa
+                                icon: Icon(Icons.person, color: accountType == 'Cliente' ? Colors.white : Colors.grey),
                                 onPressed: () => _setAccountType('Cliente'),
                               ),
                             ],
@@ -84,12 +88,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
                             _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
                             _buildTextField(eloController, "elo...", Icons.star, "Informe seu elo"),
+                            _buildTextField(addressController, "endereço...", Icons.location_on, "Informe um endereço válido"), // Campo adicional
+                            _buildTextField(birthDateController, "data de nascimento...", Icons.calendar_today, "Informe uma data válida"), // Campo adicional
+                            _buildTextField(genderController, "gênero...", Icons.person_outline, "Informe seu gênero"), // Campo adicional
                             _buildPasswordField(),
                             _buildConfirmPasswordField(),
                           ] else if (accountType == 'Cliente') ...[
                             _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
                             _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
                             _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
+                            _buildTextField(addressController, "endereço...", Icons.location_on, "Informe um endereço válido"), // Campo adicional
+                            _buildTextField(birthDateController, "data de nascimento...", Icons.calendar_today, "Informe uma data válida"), // Campo adicional
+                            _buildTextField(genderController, "gênero...", Icons.person_outline, "Informe seu gênero"), // Campo adicional
                             _buildPasswordField(),
                             _buildConfirmPasswordField(),
                           ],
@@ -102,15 +112,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             child: InkWell(
                               onTap: () {
                                 if (formKey.currentState?.validate() ?? false) {
-                                  // Adicione sua lógica de registro aqui
+                                  // Exibe uma mensagem de sucesso
                                   Get.snackbar("Sucesso", "Conta criada com sucesso!",
                                       snackPosition: SnackPosition.BOTTOM,
                                       backgroundColor: Colors.green,
                                       colorText: Colors.white);
 
-                                  // Navegar para a tela de login após um pequeno delay
-                                  Future.delayed(const Duration(seconds: 2), () {
-                                    Navigator.pop(context); // Altere para a navegação correta para a tela de login
+                                  // Navegar para a tela de login após 3 segundos
+                                  Future.delayed(const Duration(seconds: 3), () {
+                                    Navigator.pop(context); // Navegar de volta para a tela de login
                                   });
                                 }
                               },
