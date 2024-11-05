@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -647,7 +651,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 }
-
 // Tela de Registro (para futuras implementações)
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
@@ -664,6 +667,3 @@ class SignUpScreen extends StatelessWidget {
     );
   }
 }
-
-
-
