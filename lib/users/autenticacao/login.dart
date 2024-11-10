@@ -1,6 +1,8 @@
+import 'dart:convert'; // Para trabalhar com JSON
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;  // Importando o pacote HTTP
 import 'package:tccmobile/users/autenticacao/sigup_screen.dart';
 
 void main() {
@@ -58,10 +60,27 @@ class _LoginState extends State<Login> {
 
   String userType = 'Cliente';
 
-  void _login() {
+  Future<void> _login() async {
     if (formKey.currentState?.validate() ?? false) {
       String role = userType == 'Cliente' ? 'Client' : 'Pro';
-      Get.off(DashboardPage(role: role, userType: userType));
+
+      // Aqui você faz a requisição HTTP para o PHP
+      final response = await http.get(Uri.parse('http://192.168.15.126/mobile/conexao.php')); // Substitua com o endereço correto do seu PHP
+
+      if (response.statusCode == 200) {
+        // Sucesso, processa o JSON
+        var data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          // Se o retorno for sucesso, você pode passar as informações para a próxima tela
+          Get.off(DashboardPage(role: role, userType: userType));
+        } else {
+          // Se houver erro no retorno do servidor
+          Get.snackbar('Erro', 'Erro ao conectar com o servidor.');
+        }
+      } else {
+        // Caso a requisição falhe
+        Get.snackbar('Erro', 'Falha na requisição ao servidor.');
+      }
     }
   }
 
@@ -234,8 +253,6 @@ class _LoginState extends State<Login> {
     );
   }
 }
-
-//Dashboard
 class DashboardPage extends StatefulWidget {
   final String role;
   final String userType;
@@ -253,6 +270,11 @@ class _DashboardPageState extends State<DashboardPage> {
   Duration _loggedInDuration = Duration();
   String _reminderMessage = '';
   final TextEditingController _withdrawalController = TextEditingController();
+  final TextEditingController _orderTypeController = TextEditingController();
+  final TextEditingController _orderDateController = TextEditingController();
+  final TextEditingController _orderTimeController = TextEditingController();
+  final TextEditingController _orderValueController = TextEditingController();
+  final TextEditingController _chatController = TextEditingController();
 
   // Exemplos de serviços e pedidos do cliente
   final List<Map<String, dynamic>> pendingClientOrders = [
@@ -279,42 +301,14 @@ class _DashboardPageState extends State<DashboardPage> {
     },
     {
       'tipo': 'Boosting',
-      'data': '06/10/2023',
+      'data': '06/10/2027',
       'valor': 120.0,
       'horario': '16:00',
     },
   ];
 
-  // Exemplos de serviços do jogador
-  final List<Map<String, dynamic>> pendingPlayerServices = [
-    {
-      'tipo': 'Match Coaching',
-      'data': '03/10/2023',
-      'valor': 200.0,
-      'horario': '12:00',
-    },
-    {
-      'tipo': 'Performance Review',
-      'data': '07/10/2023',
-      'valor': 180.0,
-      'horario': '18:00',
-    },
-  ];
-
-  final List<Map<String, dynamic>> completedPlayerServices = [
-    {
-      'tipo': 'Match Analysis',
-      'data': '04/10/2023',
-      'valor': 150.0,
-      'horario': '15:00',
-    },
-    {
-      'tipo': 'Training Session',
-      'data': '08/10/2023',
-      'valor': 220.0,
-      'horario': '10:30',
-    },
-  ];
+  // Lista para mensagens do chat
+  final List<String> chatMessages = [];
 
   @override
   void initState() {
@@ -328,6 +322,11 @@ class _DashboardPageState extends State<DashboardPage> {
     _timer.cancel();
     _reminderTimer.cancel();
     _withdrawalController.dispose();
+    _orderTypeController.dispose();
+    _orderDateController.dispose();
+    _orderTimeController.dispose();
+    _orderValueController.dispose();
+    _chatController.dispose();
     super.dispose();
   }
 
@@ -386,6 +385,53 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  void _addOrder() {
+    final tipo = _orderTypeController.text;
+    final data = _orderDateController.text;
+    final horario = _orderTimeController.text;
+    final valor = double.tryParse(_orderValueController.text);
+
+    if (tipo.isNotEmpty && data.isNotEmpty && horario.isNotEmpty && valor != null && valor > 0) {
+      setState(() {
+        pendingClientOrders.add({
+          'tipo': tipo,
+          'data': data,
+          'valor': valor,
+          'horario': horario,
+        });
+        _orderTypeController.clear();
+        _orderDateController.clear();
+        _orderTimeController.clear();
+        _orderValueController.clear();
+      });
+      Get.snackbar(
+        "Pedido Adicionado",
+        "Seu pedido de $tipo foi adicionado com sucesso!",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+      );
+    } else {
+      Get.snackbar(
+        "Erro",
+        "Por favor, preencha todos os campos corretamente!",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void _sendMessage() {
+    final message = _chatController.text;
+    if (message.isNotEmpty) {
+      setState(() {
+        chatMessages.add('Você: $message');
+        _chatController.clear();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -396,7 +442,9 @@ class _DashboardPageState extends State<DashboardPage> {
           IconButton(
             icon: const Icon(Icons.access_time),
             onPressed: () {
-              _showLoggedInDuration();
+              // A remoção do método _showLoggedInDuration
+              // substitui a chamada aqui por algo mais simples, se necessário
+              // Por exemplo, exibir a duração diretamente em algum widget
             },
             tooltip: 'Horário',
           ),
@@ -438,31 +486,88 @@ class _DashboardPageState extends State<DashboardPage> {
           Expanded(
             child: getPageContent(),
           ),
-          if (selectedPage == 'Saque')
+          if (selectedPage == 'Adicionar Pedido')
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
                   TextField(
-                    controller: _withdrawalController,
+                    controller: _orderTypeController,
                     decoration: InputDecoration(
-                      labelText: 'Valor do Saque',
+                      labelText: 'Tipo de Pedido',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      focusedBorder: OutlineInputBorder(
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _orderDateController,
+                    decoration: InputDecoration(
+                      labelText: 'Data (dd/mm/yyyy)',
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _orderTimeController,
+                    decoration: InputDecoration(
+                      labelText: 'Horário (hh:mm)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _orderValueController,
+                    decoration: InputDecoration(
+                      labelText: 'Valor do Pedido',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     keyboardType: TextInputType.number,
                   ),
                   SizedBox(height: 10),
                   ElevatedButton(
-                    onPressed: _simulateWithdrawal,
-                    child: Text('Realizar Saque'),
+                    onPressed: _addOrder,
+                    child: Text('Adicionar Pedido'),
+                  ),
+                ],
+              ),
+            ),
+          if (selectedPage == 'Chat com o Profissional' && widget.userType == 'Cliente')
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: chatMessages.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(chatMessages[index]),
+                        );
+                      },
+                    ),
+                  ),
+                  TextField(
+                    controller: _chatController,
+                    decoration: InputDecoration(
+                      labelText: 'Digite sua mensagem...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                   SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _sendMessage,
+                    child: Text('Enviar'),
+                  ),
                 ],
               ),
             ),
@@ -471,54 +576,29 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _showLoggedInDuration() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Tempo Logado"),
-          content: Text("Você está logado há: ${getDurationString()}"),
-          actions: [
-            TextButton(
-              child: const Text("Fechar"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   List<PopupMenuItem<String>> _getMenuItems() {
     return [
       PopupMenuItem<String>(
         value: 'Dashboard Geral',
-        child: _buildMenuItem(Icons.dashboard, 'Dashboard Geral'),
+        child: _buildMenuItem(Icons.dashboard, 'Painel Geral'),
       ),
       PopupMenuItem<String>(
-        value: widget.userType == 'Cliente' ? 'Pedidos Pendentes' : 'Serviços Pendentes',
-        child: _buildMenuItem(Icons.pending, widget.userType == 'Cliente' ? 'Pedidos Pendentes' : 'Serviços Pendentes'),
+        value: 'Pedidos Pendentes',
+        child: _buildMenuItem(Icons.pending, 'Pedidos Pendentes'),
       ),
       PopupMenuItem<String>(
-        value: widget.userType == 'Cliente' ? 'Pedidos Concluídos' : 'Serviços Concluídos',
-        child: _buildMenuItem(Icons.check_circle, widget.userType == 'Cliente' ? 'Pedidos Concluídos' : 'Serviços Concluídos'),
+        value: 'Pedidos Concluídos',
+        child: _buildMenuItem(Icons.done, 'Pedidos Concluídos'),
       ),
-      if (widget.role == 'Pro')
+      if (widget.userType == 'Cliente')
         PopupMenuItem<String>(
-          value: 'Chat com o Cliente',
-          child: _buildMenuItem(Icons.chat, 'Chat com o Cliente'),
+          value: 'Adicionar Pedido',
+          child: _buildMenuItem(Icons.add, 'Adicionar Pedido'),
         ),
-      if (widget.role == 'Client')
+      if (widget.userType == 'Cliente')
         PopupMenuItem<String>(
           value: 'Chat com o Profissional',
-          child: _buildMenuItem(Icons.person, 'Chat com o Profissional'),
-        ),
-      if (widget.role == 'Pro')
-        PopupMenuItem<String>(
-          value: 'Saque',
-          child: _buildMenuItem(Icons.attach_money, 'Saque'),
+          child: _buildMenuItem(Icons.chat, 'Chat com o Profissional'),
         ),
     ];
   }
@@ -526,9 +606,9 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildMenuItem(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: Colors.black),
-        const SizedBox(width: 8),
-        Text(text, style: const TextStyle(color: Colors.black)),
+        Icon(icon),
+        SizedBox(width: 8),
+        Text(text),
       ],
     );
   }
@@ -536,56 +616,30 @@ class _DashboardPageState extends State<DashboardPage> {
   String getPageTitle(String page) {
     switch (page) {
       case 'Dashboard Geral':
-        return 'Bem-vindo ao Dashboard Geral!';
+        return 'Painel Geral';
       case 'Pedidos Pendentes':
-        return 'Aqui estão os pedidos pendentes.';
+        return 'Pedidos Pendentes';
       case 'Pedidos Concluídos':
-        return 'Aqui estão os pedidos concluídos.';
-      case 'Serviços Pendentes':
-        return 'Aqui estão os serviços pendentes.';
-      case 'Serviços Concluídos':
-        return 'Aqui estão os serviços concluídos.';
-      case 'Saque':
-        return 'Simulação de Saque';
-      case 'Chat com o Cliente':
-        return 'Chat com o Cliente';
+        return 'Pedidos Concluídos';
+      case 'Adicionar Pedido':
+        return 'Adicionar Novo Pedido';
       case 'Chat com o Profissional':
         return 'Chat com o Profissional';
       default:
-        return 'Dashboard Geral';
+        return '';
     }
   }
 
   Widget getPageContent() {
     switch (selectedPage) {
-      case 'Dashboard Geral':
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.dashboard, size: 80, color: Colors.indigo),
-              SizedBox(height: 20),
-              Text(
-                'Esta é uma visão geral do seu painel.',
-                style: TextStyle(color: Colors.black, fontSize: 18),
-              ),
-            ],
-          ),
-        );
       case 'Pedidos Pendentes':
         return ListView.builder(
           itemCount: pendingClientOrders.length,
           itemBuilder: (context, index) {
             final order = pendingClientOrders[index];
             return ListTile(
-              title: Text(
-                '${order['tipo']} - R\$${order['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${order['data']} - Horário: ${order['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
+              title: Text('${order['tipo']} - ${order['valor']}'),
+              subtitle: Text('Data: ${order['data']} - Horário: ${order['horario']}'),
             );
           },
         );
@@ -595,62 +649,23 @@ class _DashboardPageState extends State<DashboardPage> {
           itemBuilder: (context, index) {
             final order = completedClientOrders[index];
             return ListTile(
-              title: Text(
-                '${order['tipo']} - R\$${order['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${order['data']} - Horário: ${order['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
+              title: Text('${order['tipo']} - ${order['valor']}'),
+              subtitle: Text('Data: ${order['data']} - Horário: ${order['horario']}'),
             );
           },
         );
-      case 'Serviços Pendentes':
-        return ListView.builder(
-          itemCount: pendingPlayerServices.length,
-          itemBuilder: (context, index) {
-            final service = pendingPlayerServices[index];
-            return ListTile(
-              title: Text(
-                '${service['tipo']} - R\$${service['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${service['data']} - Horário: ${service['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
-            );
-          },
-        );
-      case 'Serviços Concluídos':
-        return ListView.builder(
-          itemCount: completedPlayerServices.length,
-          itemBuilder: (context, index) {
-            final service = completedPlayerServices[index];
-            return ListTile(
-              title: Text(
-                '${service['tipo']} - R\$${service['valor'].toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.black),
-              ),
-              subtitle: Text(
-                'Data: ${service['data']} - Horário: ${service['horario']}',
-                style: TextStyle(color: Colors.grey),
-              ),
-            );
-          },
-        );
-      case 'Chat com o Cliente':
-        return const Center(child: Text('Aqui é o chat com o cliente.', style: TextStyle(color: Colors.black)));
+      case 'Adicionar Pedido':
+        return Container(); // O formulário de adição de pedidos já está no layout
       case 'Chat com o Profissional':
-        return const Center(child: Text('Aqui é o chat com o profissional.', style: TextStyle(color: Colors.black)));
-      case 'Saque':
-        return const Center(child: Text('Aqui você pode realizar um saque.', style: TextStyle(color: Colors.black)));
+        return Container(); // O chat já está no layout
       default:
-        return const Center(child: Text('Selecione uma opção.', style: TextStyle(color: Colors.black)));
+        return Center(
+          child: Text('Selecione uma opção do menu'),
+        );
     }
   }
 }
+
 // Tela de Registro (para futuras implementações)
 class SigUpScreen extends StatelessWidget {
   const SigUpScreen({super.key});
