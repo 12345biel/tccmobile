@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart'; // Certifique-se de que o pacote GetX está instalado
-import 'package:tccmobile/users/autenticacao/login.dart'; // Caminho correto para a classe Login
+import 'package:get/get.dart';
+import 'package:tccmobile/intro_screen.dart'; // Certifique-se de que o caminho está correto para o arquivo IntroScreen
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,14 +12,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp( // Usa GetMaterialApp para configurar GetX
-      title: 'Login',
+    return GetMaterialApp(
+      title: 'App Name',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const Login(), // Página inicial
+      home: IntroScreen(), // Inicializa com a IntroScreen
     );
   }
 }

@@ -28,6 +28,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Crie sua Conta'),
+        backgroundColor: Colors.deepPurple,
+      ),
       backgroundColor: Colors.white,
       body: Center(
         child: LayoutBuilder(
@@ -110,7 +114,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                                   // Navegar para a tela de login após um pequeno delay
                                   Future.delayed(const Duration(seconds: 2), () {
-                                    Navigator.pop(context); // Altere para a navegação correta para a tela de login
+                                    Get.offAll(() => LoginScreen()); // Alteração para navegação correta para a tela de login
                                   });
                                 }
                               },
@@ -136,7 +140,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.pop(context);
+                                  Get.back(); // Navega para a tela anterior de login
                                 },
                                 child: const Text(
                                   "Faça login",
@@ -242,5 +246,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       ),
     ));
+  }
+}
+
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            Get.offAll(SignUpScreen());
+          },
+          child: const Text('Entrar'),
+        ),
+      ),
+    );
   }
 }
