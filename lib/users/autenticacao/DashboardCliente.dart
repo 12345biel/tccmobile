@@ -323,19 +323,34 @@ class AdicionarPedidoPage extends StatefulWidget {
 class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
   final TextEditingController _pedidoController = TextEditingController();
   final TextEditingController _quantidadeController = TextEditingController();
-  String _selectedOption = 'Opção 1';  // Valor inicial do Dropdown
+  String _selectedService = '';  // Serviço selecionado pelo usuário
+  String _selectedOption = '';  // Tipo de opção selecionado pelo usuário
+
+  // Lista de serviços disponíveis
+  final List<Map<String, String>> _services = [
+    {'name': 'EloBoosting', 'description': 'Melhore seu ranking com um boost de elo personalizado.', 'price': 'A partir de R\$99,99'},
+    {'name': 'DuoBoosting', 'description': 'Aumente seu elo jogando com um parceiro experiente.', 'price': 'A partir de R\$149,99'},
+    {'name': 'Coach', 'description': 'Receba dicas e treinos personalizados de um coach profissional.', 'price': 'A partir de R\$199,99'},
+  ];
 
   void _adicionarPedido() {
-    if (_pedidoController.text.isNotEmpty && _quantidadeController.text.isNotEmpty) {
+    if (_pedidoController.text.isNotEmpty && _quantidadeController.text.isNotEmpty && _selectedService.isNotEmpty) {
       // Aqui você pode adicionar o pedido à sua lógica de backend ou lista de pedidos
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pedido ${_pedidoController.text} adicionado!')),
-
+        SnackBar(content: Text('Pedido "${_pedidoController.text}" para o serviço "$_selectedService" adicionado!')),
       );
 
       // Limpa os campos após adicionar o pedido
       _pedidoController.clear();
       _quantidadeController.clear();
+      setState(() {
+        _selectedService = ''; // Reseta o serviço selecionado
+        _selectedOption = ''; // Reseta a opção selecionada
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, preencha todos os campos.')),
+      );
     }
   }
 
@@ -353,6 +368,38 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start, // Alinhamento ao topo
           children: [
+            // Título da seção de serviços
+            const Text(
+              'Selecione o Serviço',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+
+            // Exibe os serviços disponíveis como opções de seleção
+            for (var service in _services)
+              Card(
+                margin: const EdgeInsets.all(8.0),
+                child: ListTile(
+                  title: Text(service['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(service['description']!),
+                      Text(service['price']!, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    setState(() {
+                      _selectedService = service['name']!;
+                      _selectedOption = service['name']!;
+                    });
+                  },
+                ),
+              ),
+
+            const SizedBox(height: 20),
+
             // Campo de Nome do Pedido
             TextField(
               controller: _pedidoController,
@@ -386,36 +433,30 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
             ),
             const SizedBox(height: 20),
 
-            // Dropdown para escolher a opção
-            DropdownButtonFormField<String>(
-              value: _selectedOption,
-              items: [
-                DropdownMenuItem<String>(
-                  value: 'Opção 1',
-                  child: Text('EloBoosting'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Opção 2',
-                  child: Text('DuoBoosting'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Opção 3',
-                  child: Text('Coach'),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedOption = value!;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: 'Escolha uma Opção',
-                labelStyle: TextStyle(color: Colors.deepPurple), // Cor nova
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+            // Dropdown para escolher a opção (caso queira um adicional de personalização)
+            if (_selectedService.isNotEmpty)
+              DropdownButtonFormField<String>(
+                value: _selectedOption.isNotEmpty ? _selectedOption : _selectedService,
+                items: [
+                  DropdownMenuItem<String>(value: _selectedService, child: Text(_selectedService)),
+                  DropdownMenuItem<String>(value: 'Opção 1', child: Text('Opção 1')),
+                  DropdownMenuItem<String>(value: 'Opção 2', child: Text('Opção 2')),
+                  DropdownMenuItem<String>(value: 'Opção 3', child: Text('Opção 3')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedOption = value!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Escolha uma Opção',
+                  labelStyle: TextStyle(color: Colors.deepPurple),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
-            ),
+
             const SizedBox(height: 20),
 
             // Botão Adicionar Pedido
@@ -444,6 +485,7 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
     );
   }
 }
+
 
 // Página de perfil
 class ProfilePage extends StatelessWidget {
@@ -853,8 +895,6 @@ class HelpPage extends StatelessWidget {
     );
   }
 }
-
-
 
 // Dashboard do Cliente
 class DashboardCliente extends StatelessWidget {
