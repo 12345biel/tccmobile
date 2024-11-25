@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tccmobile/users/autenticacao/login.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -13,6 +14,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
+  final cpfController = TextEditingController();
   final eloController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
@@ -30,7 +32,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Crie sua Conta'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Color(0xFF9370DB),
       ),
       backgroundColor: Colors.white,
       body: Center(
@@ -84,18 +86,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                           // Campos de entrada baseados no tipo de conta
                           if (accountType == 'Jogador') ...[
-                            _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
-                            _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
-                            _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
-                            _buildTextField(eloController, "elo...", Icons.star, "Informe seu elo"),
-                            _buildPasswordField(),
-                            _buildConfirmPasswordField(),
+                            _buildJogadorFields(), // Campos específicos para Jogador
                           ] else if (accountType == 'Cliente') ...[
-                            _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
-                            _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
-                            _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
-                            _buildPasswordField(),
-                            _buildConfirmPasswordField(),
+                            _buildClienteFields(), // Campos específicos para Cliente
                           ],
                           const SizedBox(height: 20),
 
@@ -114,7 +107,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                                   // Navegar para a tela de login após um pequeno delay
                                   Future.delayed(const Duration(seconds: 2), () {
-                                    Get.offAll(() => LoginScreen()); // Alteração para navegação correta para a tela de login
+                                    Get.offAll(() => Login());
                                   });
                                 }
                               },
@@ -162,6 +155,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
         ),
       ),
+    );
+  }
+
+  // Métodos para os campos de Jogador
+  Widget _buildJogadorFields() {
+    return Column(
+      children: [
+        _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
+        _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
+        _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
+        _buildTextField(cpfController, "cpf...", Icons.assignment_ind, "Informe um CPF válido"), // Campo CPF
+        _buildTextField(eloController, "elo...", Icons.star, "Informe seu elo"),
+        _buildPasswordField(),
+        _buildConfirmPasswordField(),
+      ],
+    );
+  }
+
+  // Métodos para os campos de Cliente
+  Widget _buildClienteFields() {
+    return Column(
+      children: [
+        _buildTextField(nameController, "nome...", Icons.person, "Informe um nome válido"),
+        _buildTextField(emailController, "email...", Icons.email, "Informe um email válido"),
+        _buildTextField(phoneController, "telefone...", Icons.phone, "Informe um telefone válido"),
+        _buildTextField(cpfController, "cpf...", Icons.assignment_ind, "Informe um CPF válido"), // Campo CPF
+        _buildPasswordField(),
+        _buildConfirmPasswordField(),
+      ],
     );
   }
 
@@ -246,26 +268,5 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       ),
     ));
-  }
-}
-
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Get.offAll(SignUpScreen());
-          },
-          child: const Text('Entrar'),
-        ),
-      ),
-    );
   }
 }

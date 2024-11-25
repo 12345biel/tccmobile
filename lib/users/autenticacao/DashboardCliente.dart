@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Página de pedidos pendentes
 class PendingOrdersPage extends StatelessWidget {
@@ -87,6 +88,15 @@ class PendingOrdersPage extends StatelessWidget {
                   ),
                 ),
               ),
+              onTap: () {
+                // Navega para a página de chat com o profissional
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChatPage(),
+                  ),
+                );
+              },
             ),
           );
         },
@@ -108,6 +118,8 @@ class PendingOrdersPage extends StatelessWidget {
     }
   }
 }
+
+
 
 // Página de pedidos concluidos
 class CompletedOrdersPage extends StatelessWidget {
@@ -203,36 +215,101 @@ class CompletedOrdersPage extends StatelessWidget {
   }
 }
 
-// Página de chat com o PRO
-class ChatWithProPage extends StatefulWidget {
-  const ChatWithProPage({super.key});
+// Página de chat com o Profissional
+class ChatPage extends StatelessWidget {
+  const ChatPage({super.key});
 
   @override
-  _ChatWithProPageState createState() => _ChatWithProPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Chat com o Profissional'),
+        backgroundColor: Colors.purple.shade700, // Cor de fundo da AppBar
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView.builder(
+          itemCount: 4,
+          itemBuilder: (context, index) {
+            return ListTile(
+              contentPadding: EdgeInsets.symmetric(vertical: 10),
+              leading: CircleAvatar(
+                radius: 20,
+                child: Icon(
+                  Icons.person,
+                  color: Colors.black26,
+                  size: 30, // Ajuste o tamanho do ícone conforme necessário
+                ),
+              ),
+              title: Text(
+                'Usuário ${index + 1}', // Nome do usuário (1 a 4)
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'Clique para iniciar o chat',
+                style: const TextStyle(color: Colors.black54),
+              ),
+              onTap: () {
+                // Ao clicar no usuário, abre a tela de chat privado
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatWithProfessionalPage(playerIndex: index),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
-class _ChatWithProPageState extends State<ChatWithProPage> {
+class ChatWithProfessionalPage extends StatefulWidget {
+  final int playerIndex;
+
+  const ChatWithProfessionalPage({required this.playerIndex, super.key});
+
+  @override
+  _ChatWithProfessionalPageState createState() => _ChatWithProfessionalPageState();
+}
+
+class _ChatWithProfessionalPageState extends State<ChatWithProfessionalPage> {
   final TextEditingController _controller = TextEditingController();
-  final List<String> _messages = [
-    'PRO: Olá, como posso ajudar você?',
-    'Você: Oi, estou com uma dúvida!',
-  ];
+  List<String> _messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa as mensagens com base no índice do usuário
+    _messages = [
+      'Usuário ${widget.playerIndex + 1}: Olá, como posso ajudar você?',
+      'Profissional: Oi, estou com uma dúvida!',
+    ];
+  }
 
   void _sendMessage() {
     if (_controller.text.isNotEmpty) {
       setState(() {
-        _messages.add('Você: ${_controller.text}');
-        _messages.add('PRO: Resposta automática!');
+        _messages.add('Usuário ${widget.playerIndex + 1}: ${_controller.text}');
+        _messages.add('Profissional: Resposta automática!');
         _controller.clear();
       });
     }
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat com o PRO'),
+        title: Text('Chat com Profissional ${widget.playerIndex + 1}'),
         backgroundColor: Colors.teal,
         elevation: 0,
       ),
@@ -244,16 +321,16 @@ class _ChatWithProPageState extends State<ChatWithProPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                bool isProMessage = message.startsWith('PRO');
+                bool isProfessionalMessage = message.startsWith('Profissional');
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   child: Align(
-                    alignment: isProMessage ? Alignment.topLeft : Alignment.topRight,
+                    alignment: isProfessionalMessage ? Alignment.topLeft : Alignment.topRight,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                       decoration: BoxDecoration(
-                        color: isProMessage ? Colors.grey.shade200 : Colors.blue.shade100,
+                        color: isProfessionalMessage ? Colors.grey.shade200 : Colors.blue.shade100,
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
@@ -266,7 +343,7 @@ class _ChatWithProPageState extends State<ChatWithProPage> {
                       child: Text(
                         message,
                         style: TextStyle(
-                          color: isProMessage ? Colors.black : Colors.blue.shade900,
+                          color: isProfessionalMessage ? Colors.black : Colors.blue.shade900,
                           fontSize: 16,
                         ),
                       ),
@@ -323,29 +400,42 @@ class AdicionarPedidoPage extends StatefulWidget {
 class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
   final TextEditingController _pedidoController = TextEditingController();
   final TextEditingController _quantidadeController = TextEditingController();
-  String _selectedService = '';  // Serviço selecionado pelo usuário
-  String _selectedOption = '';  // Tipo de opção selecionado pelo usuário
+  final TextEditingController _descricaoController = TextEditingController();
+  final TextEditingController _precoController = TextEditingController();
 
-  // Lista de serviços disponíveis
+  String _selectedService = '';
+  String _selectedTema = '';
+
+  // Lista de serviços com seus dados
   final List<Map<String, String>> _services = [
     {'name': 'EloBoosting', 'description': 'Melhore seu ranking com um boost de elo personalizado.', 'price': 'A partir de R\$99,99'},
     {'name': 'DuoBoosting', 'description': 'Aumente seu elo jogando com um parceiro experiente.', 'price': 'A partir de R\$149,99'},
     {'name': 'Coach', 'description': 'Receba dicas e treinos personalizados de um coach profissional.', 'price': 'A partir de R\$199,99'},
   ];
 
+  // Método para atualizar os campos quando um serviço é selecionado
+  void _atualizarCampos(String tema) {
+    final selectedService = _services.firstWhere((service) => service['name'] == tema);
+    setState(() {
+      _descricaoController.text = selectedService['description']!;
+      _precoController.text = selectedService['price']!;
+    });
+  }
+
+  // Método para adicionar o pedido
   void _adicionarPedido() {
-    if (_pedidoController.text.isNotEmpty && _quantidadeController.text.isNotEmpty && _selectedService.isNotEmpty) {
-      // Aqui você pode adicionar o pedido à sua lógica de backend ou lista de pedidos
+    if (_pedidoController.text.isNotEmpty && _quantidadeController.text.isNotEmpty && _descricaoController.text.isNotEmpty && _precoController.text.isNotEmpty && _selectedService.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Pedido "${_pedidoController.text}" para o serviço "$_selectedService" adicionado!')),
       );
 
-      // Limpa os campos após adicionar o pedido
       _pedidoController.clear();
       _quantidadeController.clear();
+      _descricaoController.clear();
+      _precoController.clear();
       setState(() {
-        _selectedService = ''; // Reseta o serviço selecionado
-        _selectedOption = ''; // Reseta a opção selecionada
+        _selectedService = '';
+        _selectedTema = '';
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -359,16 +449,14 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Adicionar Pedido'),
-        backgroundColor: Colors.deepPurple, // Cor nova
+        backgroundColor: Colors.deepPurple,
         elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView( // Envolvendo o conteúdo com SingleChildScrollView
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start, // Alinhamento ao topo
           children: [
-            // Título da seção de serviços
             const Text(
               'Selecione o Serviço',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -392,10 +480,31 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
                   onTap: () {
                     setState(() {
                       _selectedService = service['name']!;
-                      _selectedOption = service['name']!;
+                      _selectedTema = service['name']!;  // Atualiza a seleção do tema
                     });
+                    _atualizarCampos(service['name']!);  // Atualiza os campos de acordo com a escolha
                   },
                 ),
+              ),
+
+            const SizedBox(height: 20),
+
+            // Dropdown para selecionar o tema
+            if (_selectedService.isNotEmpty)
+              DropdownButton<String>(
+                value: _selectedTema,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedTema = newValue!;
+                  });
+                  _atualizarCampos(newValue!);  // Atualiza os campos ao mudar o tema
+                },
+                items: _services.map<DropdownMenuItem<String>>((service) {
+                  return DropdownMenuItem<String>(
+                    value: service['name'],
+                    child: Text(service['name']!),
+                  );
+                }).toList(),
               ),
 
             const SizedBox(height: 20),
@@ -405,9 +514,9 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
               controller: _pedidoController,
               decoration: InputDecoration(
                 labelText: 'Nome do Pedido',
-                labelStyle: TextStyle(color: Colors.deepPurple), // Cor nova
+                labelStyle: TextStyle(color: Colors.deepPurple),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.deepPurple, width: 2), // Cor nova
+                  borderSide: BorderSide(color: Colors.deepPurple, width: 2),
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -421,9 +530,9 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
               controller: _quantidadeController,
               decoration: InputDecoration(
                 labelText: 'Quantidade',
-                labelStyle: TextStyle(color: Colors.deepPurple), // Cor nova
+                labelStyle: TextStyle(color: Colors.deepPurple),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.deepPurple, width: 2), // Cor nova
+                  borderSide: BorderSide(color: Colors.deepPurple, width: 2),
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -433,48 +542,66 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
             ),
             const SizedBox(height: 20),
 
-            // Dropdown para escolher a opção (caso queira um adicional de personalização)
-            if (_selectedService.isNotEmpty)
-              DropdownButtonFormField<String>(
-                value: _selectedOption.isNotEmpty ? _selectedOption : _selectedService,
-                items: [
-                  DropdownMenuItem<String>(value: _selectedService, child: Text(_selectedService)),
-                  DropdownMenuItem<String>(value: 'Opção 1', child: Text('Opção 1')),
-                  DropdownMenuItem<String>(value: 'Opção 2', child: Text('Opção 2')),
-                  DropdownMenuItem<String>(value: 'Opção 3', child: Text('Opção 3')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedOption = value!;
-                  });
-                },
-                decoration: InputDecoration(
-                  labelText: 'Escolha uma Opção',
-                  labelStyle: TextStyle(color: Colors.deepPurple),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+            // Campo de Descrição
+            const Text(
+              'Descrição do Pedido',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _descricaoController,
+              maxLines: 4, // Ajustando o tamanho para uma caixa média
+              decoration: InputDecoration(
+                hintText: 'Descreva o pedido detalhadamente...',
+                labelStyle: TextStyle(color: Colors.deepPurple),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.deepPurple, width: 2),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
+            ),
+            const SizedBox(height: 10),
 
+            // Campo de Preço (dinâmico com base no tema)
+            const Text(
+              'Preço do Pedido',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _precoController,
+              decoration: InputDecoration(
+                hintText: 'Preço do serviço...',
+                labelStyle: TextStyle(color: Colors.deepPurple),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.deepPurple, width: 2),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              enabled: false, // Desabilita o campo para edição
+            ),
             const SizedBox(height: 20),
 
             // Botão Adicionar Pedido
-            Center( // Centraliza o botão
+            Center(
               child: ElevatedButton(
                 onPressed: _adicionarPedido,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple, // Cor nova
+                  backgroundColor: Colors.deepPurple,
                   padding: EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15), // Mantém a borda quadrada
+                    borderRadius: BorderRadius.circular(15),
                   ),
                 ),
                 child: const Text(
                   'Adicionar Pedido',
                   style: TextStyle(
-                    fontSize: 15,  // Tamanho da fonte mantido em 24
-                    color: Colors.white, // Cor do texto branca
+                    fontSize: 15,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -485,6 +612,7 @@ class _AdicionarPedidoPageState extends State<AdicionarPedidoPage> {
     );
   }
 }
+
 
 
 // Página de perfil
@@ -499,7 +627,7 @@ class ProfilePage extends StatelessWidget {
         backgroundColor: Colors.deepPurple, // Cor personalizada para o AppBar
         elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView( // Permite rolagem caso o conteúdo ultrapasse o espaço
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,7 +712,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 40),
 
-            // Botões com mais estilo e personalização
+            // Botão de edição de perfil
             ElevatedButton(
               onPressed: () {
                 // Adicionar lógica de edição de perfil
@@ -604,26 +732,6 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20), // Espaço entre os botões
-            ElevatedButton(
-              onPressed: () {
-                // Lógica de logout
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent, // Cor personalizada para logout
-                padding: EdgeInsets.symmetric(vertical: 12), // Ajusta o padding
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8), // Borda arredondada
-                ),
-              ),
-              child: const Text(
-                'Sair',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white, // Cor do texto branca
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -631,23 +739,54 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// Página de configurações
-// Página de configurações
-class SettingsPage extends StatelessWidget {
+//Pagina de configuraçoes
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  _SettingsPageState createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool _notificationsEnabled = true;
+  String _selectedLanguage = 'pt_BR';
+  String _theme = 'light';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  // Carregar as preferências de configurações do SharedPreferences
+  _loadPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
+      _selectedLanguage = prefs.getString('selectedLanguage') ?? 'pt_BR';
+      _theme = prefs.getString('theme') ?? 'light';
+    });
+  }
+
+  // Salvar as preferências de configurações no SharedPreferences
+  _savePreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool('notificationsEnabled', _notificationsEnabled);
+    prefs.setString('selectedLanguage', _selectedLanguage);
+    prefs.setString('theme', _theme);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configurações'),
-        backgroundColor: Colors.white, // Cor para o AppBar
+        backgroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            // Título da seção de configurações
             const Text(
               'Configurações da conta',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
@@ -658,44 +797,15 @@ class SettingsPage extends StatelessWidget {
             SwitchListTile(
               title: const Text('Notificações', style: TextStyle(color: Colors.black)),
               subtitle: const Text('Ative ou desative as notificações da conta.', style: TextStyle(color: Colors.black)),
-              value: true, // Defina de acordo com o estado da configuração
+              value: _notificationsEnabled,
               onChanged: (bool value) {
-                // Lógica para alterar a configuração de notificações
+                setState(() {
+                  _notificationsEnabled = value;
+                });
+                _savePreferences();
               },
             ),
             const SizedBox(height: 20),
-
-            // Alterar senha
-            ElevatedButton(
-              onPressed: () {
-                // Lógica para alterar senha
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black, // Cor preta para o botão
-                padding: const EdgeInsets.symmetric(vertical: 15),
-              ),
-              child: const Text(
-                'Alterar Senha',
-                style: TextStyle(fontSize: 16, color: Colors.white), // Texto branco
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Lógica de Logout
-            ElevatedButton(
-              onPressed: () {
-                // Lógica de logout
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black, // Cor preta para o botão de logout
-                padding: const EdgeInsets.symmetric(vertical: 15),
-              ),
-              child: const Text(
-                'Sair',
-                style: TextStyle(fontSize: 16, color: Colors.white), // Texto branco
-              ),
-            ),
-            const SizedBox(height: 30),
 
             // Seção de idioma
             const Text(
@@ -704,6 +814,7 @@ class SettingsPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
+              value: _selectedLanguage,
               items: const [
                 DropdownMenuItem<String>(
                   value: 'pt_BR',
@@ -715,12 +826,15 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
               onChanged: (String? value) {
-                // Lógica para alterar o idioma
+                setState(() {
+                  _selectedLanguage = value!;
+                });
+                _savePreferences();
               },
               decoration: InputDecoration(
                 labelText: 'Selecione o idioma',
                 border: OutlineInputBorder(),
-                labelStyle: TextStyle(color: Colors.black), // Cor do rótulo
+                labelStyle: TextStyle(color: Colors.black),
               ),
             ),
             const SizedBox(height: 30),
@@ -735,9 +849,12 @@ class SettingsPage extends StatelessWidget {
               title: const Text('Modo Claro', style: TextStyle(color: Colors.black)),
               leading: Radio<String>(
                 value: 'light',
-                groupValue: 'dark', // Lógica para manter o valor correto
+                groupValue: _theme,
                 onChanged: (String? value) {
-                  // Lógica para alterar o tema
+                  setState(() {
+                    _theme = value!;
+                  });
+                  _savePreferences();
                 },
               ),
             ),
@@ -745,15 +862,17 @@ class SettingsPage extends StatelessWidget {
               title: const Text('Modo Escuro', style: TextStyle(color: Colors.black)),
               leading: Radio<String>(
                 value: 'dark',
-                groupValue: 'dark',
+                groupValue: _theme,
                 onChanged: (String? value) {
-                  // Lógica para alterar o tema
+                  setState(() {
+                    _theme = value!;
+                  });
+                  _savePreferences();
                 },
               ),
             ),
             const SizedBox(height: 20),
 
-            // Informações de conta
             const Divider(),
             const SizedBox(height: 10),
             const Text(
@@ -765,24 +884,32 @@ class SettingsPage extends StatelessWidget {
             const Text('Email: joao.silva@exemplo.com', style: TextStyle(color: Colors.black)),
             const SizedBox(height: 20),
 
-            // Opção de feedback
             ElevatedButton(
               onPressed: () {
                 // Lógica para enviar feedback
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black, // Cor preta para o botão de feedback
+                backgroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               child: const Text(
                 'Enviar Feedback',
-                style: TextStyle(fontSize: 16, color: Colors.white), // Texto branco
+                style: TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+// Função para aplicar o tema baseado nas preferências
+ThemeData getAppTheme(String theme) {
+  if (theme == 'dark') {
+    return ThemeData.dark();
+  } else {
+    return ThemeData.light();
   }
 }
 
@@ -1010,7 +1137,7 @@ class DashboardCliente extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ChatWithProPage()),
+                      MaterialPageRoute(builder: (context) => const ChatPage()),
                     );
                   },
                 ),

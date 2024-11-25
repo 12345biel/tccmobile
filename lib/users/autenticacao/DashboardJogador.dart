@@ -987,7 +987,7 @@ class _WithdrawPageState extends State<WithdrawPage> {
   }
 }
 
-// Página de Chat
+// Página de Chat com o Cliente
 class ChatPage extends StatelessWidget {
   const ChatPage({super.key});
 
