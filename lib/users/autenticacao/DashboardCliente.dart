@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<void> logout() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear(); // Remove todos os dados salvos
+}
+
+
 // Página de pedidos pendentes
 class PendingOrdersPage extends StatelessWidget {
   const PendingOrdersPage({super.key});
@@ -1038,6 +1044,8 @@ class DashboardCliente extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: () {
+              logout();
+
               // Redireciona para a página de login
               Navigator.pushReplacement(
                 context,

@@ -1,9 +1,47 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:tccmobile/users/autenticacao/sigup_screen.dart'; // Certifique-se de que o caminho está correto
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tccmobile/users/autenticacao/sigup_screen.dart';
 import 'DashboardCliente.dart';
 import 'DashboardJogador.dart';
+
+
+//salvar dados
+Future<void> saveUserData(Map<String, dynamic> userData, String usertype) async {
+  final prefs = await SharedPreferences.getInstance();
+
+  // Salve os dados necessários como Strings no SharedPreferences
+  if (usertype == 'Jogador') {
+    prefs.setInt('id', userData['id']);
+
+    prefs.setString('name', userData['name']);
+
+    prefs.setString('email', userData['email']);
+
+    prefs.setString('rank', userData['rank']);
+
+    prefs.setString('tel', userData['tel']);
+
+    prefs.setString('cpf', userData['cpf']);
+
+  } else {
+    prefs.setInt('id', userData['id']);
+
+    prefs.setString('name', userData['name']);
+
+    prefs.setString('email', userData['email']);
+
+    prefs.setString('tel', userData['tel']);
+
+    prefs.setString('cpf', userData['cpf']);
+
+  }
+
+  print('Dados salvos localmente!');
+}
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,13 +98,76 @@ class _LoginState extends State<Login> {
 
   String userType = 'Cliente';
 
-  void _login() {
+  // Método para autenticação
+  Future<bool> authenticateUser(String email, String senha, String usertype) async {
+    final String apiUrl = usertype == "Jogador" ?
+        'http://192.168.15.126/site/tcc-etec-angeers/api/getJogador.php'
+        : 'http://192.168.15.126/site/tcc-etec-angeers/api/getUsuario.php';
+    final Uri uri = Uri.parse('$apiUrl?email=$email&senha=$senha');
+
+    try {
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Verificar se a resposta indica sucesso
+        if (data['status'] == 'success') {
+
+          final datatype = usertype == 'Jogador' ? data['jogador'] : data['cliente'];
+
+          // Salva os dados do jogador localmente
+
+          await saveUserData(datatype, usertype);
+
+          return true;
+        }
+
+      }
+
+      return false;
+    } catch (e) {
+      print("Erro ao autenticar: $e");
+      return false;
+    }
+
+  }
+
+  void _login() async {
     if (formKey.currentState?.validate() ?? false) {
-      // Navegação para o dashboard com base no tipo de usuário
-      if (userType == 'Cliente') {
-        Get.off(() => const DashboardCliente());
-      } else if (userType == 'Jogador') {
-        Get.off(() => const DashboardJogador());
+      // Mostrar carregamento durante a autenticação
+      Get.dialog(
+        const Center(
+          child: CircularProgressIndicator(),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Chamar a função de autenticação
+      final success = await authenticateUser(
+        emailController.text,
+        passwordController.text,
+        userType
+      );
+
+      Get.back(); // Fechar o diálogo de carregamento
+
+      if (success) {
+        // Navegação para o dashboard com base no tipo de usuário
+        if (userType == 'Cliente') {
+          Get.off(() => const DashboardCliente());
+        } else if (userType == 'Jogador') {
+          Get.off(() => const DashboardJogador());
+        }
+      } else {
+        // Mostrar mensagem de erro
+        Get.snackbar(
+          'Erro de Login',
+          'Credenciais inválidas. Por favor, tente novamente.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white,
+        );
       }
     }
   }
@@ -111,13 +212,16 @@ class _LoginState extends State<Login> {
                             children: [
                               TextFormField(
                                 controller: emailController,
-                                validator: (val) => val!.isEmpty ? "Informe um email válido" : null,
+                                validator: (val) =>
+                                val!.isEmpty ? "Informe um email válido" : null,
                                 decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.email, color: Colors.black),
+                                  prefixIcon:
+                                  const Icon(Icons.email, color: Colors.black),
                                   hintText: "email...",
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(30),
-                                    borderSide: const BorderSide(color: Colors.white60),
+                                    borderSide:
+                                    const BorderSide(color: Colors.white60),
                                   ),
                                   fillColor: Colors.white,
                                   filled: true,
@@ -127,22 +231,28 @@ class _LoginState extends State<Login> {
                               Obx(() => TextFormField(
                                 controller: passwordController,
                                 obscureText: isObsecure.value,
-                                validator: (val) => val!.isEmpty ? "Informe uma senha válida" : null,
+                                validator: (val) => val!.isEmpty
+                                    ? "Informe uma senha válida"
+                                    : null,
                                 decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.vpn_key_sharp, color: Colors.black),
+                                  prefixIcon: const Icon(Icons.vpn_key_sharp,
+                                      color: Colors.black),
                                   suffixIcon: GestureDetector(
                                     onTap: () {
                                       isObsecure.value = !isObsecure.value;
                                     },
                                     child: Icon(
-                                      isObsecure.value ? Icons.visibility_off : Icons.visibility,
+                                      isObsecure.value
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
                                       color: Colors.black,
                                     ),
                                   ),
                                   hintText: "password...",
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(30),
-                                    borderSide: const BorderSide(color: Colors.white60),
+                                    borderSide:
+                                    const BorderSide(color: Colors.white60),
                                   ),
                                   fillColor: Colors.white,
                                   filled: true,
@@ -154,7 +264,8 @@ class _LoginState extends State<Login> {
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: Colors.white,
-                                  labelStyle: TextStyle(color: Color(0xFFA88A6F)),
+                                  labelStyle:
+                                  TextStyle(color: Color(0xFFA88A6F)),
                                 ),
                                 items: const [
                                   DropdownMenuItem<String>(
@@ -163,7 +274,8 @@ class _LoginState extends State<Login> {
                                       children: [
                                         Icon(Icons.person, color: Colors.black),
                                         SizedBox(width: 8),
-                                        Text('Cliente', style: TextStyle(color: Colors.black)),
+                                        Text('Cliente',
+                                            style: TextStyle(color: Colors.black)),
                                       ],
                                     ),
                                   ),
@@ -173,7 +285,8 @@ class _LoginState extends State<Login> {
                                       children: [
                                         Icon(Icons.gamepad, color: Colors.black),
                                         SizedBox(width: 8),
-                                        Text('Jogador', style: TextStyle(color: Colors.black)),
+                                        Text('Jogador',
+                                            style: TextStyle(color: Colors.black)),
                                       ],
                                     ),
                                   ),
@@ -198,10 +311,12 @@ class _LoginState extends State<Login> {
                                   onTap: _login,
                                   borderRadius: BorderRadius.circular(30),
                                   child: const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 28),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 10, horizontal: 28),
                                     child: Text(
                                       "Login",
-                                      style: TextStyle(color: Colors.white, fontSize: 16),
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 16),
                                     ),
                                   ),
                                 ),
@@ -210,14 +325,17 @@ class _LoginState extends State<Login> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text("Don't have an account?", style: TextStyle(color: Colors.white60)),
+                                  const Text("Don't have an account?",
+                                      style:
+                                      TextStyle(color: Colors.white60)),
                                   TextButton(
                                     onPressed: () {
-                                      Get.to(() => const SignUpScreen()); // Navegação para o registro
+                                      Get.to(() => const SignUpScreen());
                                     },
                                     child: const Text(
                                       "Register Here",
-                                      style: TextStyle(color: Colors.white, fontSize: 16),
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 16),
                                     ),
                                   ),
                                 ],

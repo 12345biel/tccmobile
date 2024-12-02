@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login.dart';
 import 'dart:math';
+
+Future<void> logout() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear(); // Remove todos os dados salvos
+}
+
 
 class DashboardJogador extends StatelessWidget {
   const DashboardJogador({super.key});
@@ -46,6 +53,8 @@ class DashboardJogador extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.black),
             onPressed: () {
+              logout();
+
               // Navega para a página de login e remove todas as páginas anteriores
               Navigator.pushAndRemoveUntil(
                 context,

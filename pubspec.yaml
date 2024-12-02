@@ -36,6 +36,7 @@ dependencies:
   mrx_charts: ^0.1.3
   fl_chart: ^0.69.0
   shared_preferences: ^2.0.15
+  http: ^1.2.2
 
 
 

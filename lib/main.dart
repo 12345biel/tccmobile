@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:tccmobile/intro_screen.dart'; // Certifique-se de que o caminho está correto para o arquivo IntroScreen
+import 'package:tccmobile/intro_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
