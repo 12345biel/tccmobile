@@ -880,7 +880,8 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 20),
 
             const Divider(),
-            const SizedBox(height: 10),
+
+            // Informações da Conta
             const Text(
               'Informações da Conta',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
@@ -892,16 +893,64 @@ class _SettingsPageState extends State<SettingsPage> {
 
             ElevatedButton(
               onPressed: () {
-                // Lógica para enviar feedback
+                // Lógica para alterar senha
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 15),
+                backgroundColor: Colors.blueGrey,
               ),
-              child: const Text(
-                'Enviar Feedback',
-                style: TextStyle(fontSize: 16, color: Colors.white),
+              child: const Text('Alterar Senha', style: TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(height: 20),
+
+            // Gerenciamento de dispositivos
+            const Text(
+              'Dispositivos Conectados',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              title: const Text('iPhone 13 - Último login: 05/12/2024', style: TextStyle(color: Colors.black)),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () {
+                  // Lógica para desconectar dispositivo
+                },
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // Privacidade e exclusão de conta
+            const Text(
+              'Privacidade',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              title: const Text('Política de Privacidade', style: TextStyle(color: Colors.black)),
+              onTap: () {
+                // Abrir política de privacidade
+              },
+            ),
+            ListTile(
+              title: const Text('Excluir Conta', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                // Lógica para exclusão de conta
+              },
+            ),
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: () {
+                // Lógica para logout
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => Login()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Sair da Conta', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -943,20 +992,24 @@ class HelpPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Confira as perguntas mais frequentes (FAQ) ou entre em contato com nosso suporte. Também temos uma seção explicando como funciona o nosso serviço.',
+                'Confira as perguntas mais frequentes (FAQ), tutoriais ou entre em contato com nosso suporte.',
                 style: TextStyle(fontSize: 16, color: Colors.black),
               ),
               const SizedBox(height: 20),
+
+              // Seção: Como Funciona?
               const Text(
                 'Como Funciona?',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
               ),
               const SizedBox(height: 10),
               const Text(
-                'Nosso serviço permite que você ...',
+                'Nosso serviço conecta você com ... (explique aqui como funciona o sistema ou o app).',
                 style: TextStyle(fontSize: 16, color: Colors.black),
               ),
               const SizedBox(height: 20),
+
+              // Seção: Perguntas Frequentes
               const Text(
                 'Perguntas Frequentes (FAQ)',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
@@ -989,34 +1042,100 @@ class HelpPage extends StatelessWidget {
                 style: TextStyle(fontSize: 16, color: Colors.black),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  // Lógica para acessar FAQ
+
+              // Seção: Tutoriais
+              const Text(
+                'Tutoriais Rápidos',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                leading: const Icon(Icons.play_circle_outline, color: Colors.black),
+                title: const Text(
+                  'Como usar o aplicativo?',
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+                onTap: () {
+                  // Abrir vídeo/tutorial
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black, // Cor preta para o botão
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+              ),
+              ListTile(
+                leading: const Icon(Icons.play_circle_outline, color: Colors.black),
+                title: const Text(
+                  'Dicas para aproveitar ao máximo nossos serviços',
+                  style: TextStyle(fontSize: 16, color: Colors.black),
                 ),
-                child: const Text(
-                  'Ver FAQ Completo',
-                  style: TextStyle(fontSize: 16, color: Colors.white), // Texto branco
-                ),
+                onTap: () {
+                  // Abrir vídeo/tutorial
+                },
               ),
               const SizedBox(height: 20),
+
+              // Seção: Links Úteis
+              const Text(
+                'Links Úteis',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                leading: const Icon(Icons.link, color: Colors.black),
+                title: const Text(
+                  'Termos e Condições',
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+                onTap: () {
+                  // Navegar para página de Termos
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.link, color: Colors.black),
+                title: const Text(
+                  'Política de Privacidade',
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+                onTap: () {
+                  // Navegar para página de Política
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Botão para Contato
               ElevatedButton(
                 onPressed: () {
-                  // Lógica para contato com o suporte
+                  // Navegar para página de contato ou abrir suporte
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black, // Cor preta para o botão
+                  backgroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
                 child: const Text(
                   'Contato com Suporte',
-                  style: TextStyle(fontSize: 16, color: Colors.white), // Texto branco
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Seção: Abrir Ticket
+              const Text(
+                'Ainda com dúvidas?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  // Navegar para página de abertura de ticket
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+                child: const Text(
+                  'Abrir Ticket de Suporte',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 20),
+
               const Text(
                 'Caso você tenha outras dúvidas, nossa equipe de suporte está disponível 24/7 para ajudar!',
                 style: TextStyle(fontSize: 16, color: Colors.black),
@@ -1028,6 +1147,7 @@ class HelpPage extends StatelessWidget {
     );
   }
 }
+
 
 // Dashboard do Cliente
 class DashboardCliente extends StatelessWidget {
