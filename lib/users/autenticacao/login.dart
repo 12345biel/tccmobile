@@ -101,9 +101,11 @@ class _LoginState extends State<Login> {
   // Método para autenticação
   Future<bool> authenticateUser(String email, String senha, String usertype) async {
     final String apiUrl = usertype == "Jogador" ?
-        'http://192.168.15.126/site/tcc-etec-angeers/api/getJogador.php'
-        : 'http://192.168.15.126/site/tcc-etec-angeers/api/getUsuario.php';
+        'http://192.168.15.126/site0712/tcc-etec-angeers/api/getJogador.php'
+        : 'http://192.168.15.126/site0712/tcc-etec-angeers/api/getUsuario.php';
     final Uri uri = Uri.parse('$apiUrl?email=$email&senha=$senha');
+
+    print('$uri');
 
     try {
       final response = await http.get(uri);
